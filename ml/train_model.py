@@ -62,17 +62,17 @@ def _load_real_data() -> tuple[pd.DataFrame | None, int]:
     Joins: students → employment_outcomes → student_skills (aggregated)
     Label: 1 = Placed, 0 = Not Placed  (skips 'In Progress')
     Leakage check: only features known BEFORE outcome are included.
+    Falls back safely if database is empty or not reachable during offline training.
     """
     sys.path.insert(0, ROOT_DIR)
+    from flask import has_app_context
     from app import create_app
     from extensions import db
     from models.student import Student
     from models.outcome import EmploymentOutcome
     from models.gap import SkillGapAnalysis
-    from sqlalchemy import func
 
-    app = create_app()
-    with app.app_context():
+    def _query():
         # Count how many student-outcomes are labeled (Placed / Not Placed)
         labeled_outcomes = (
             EmploymentOutcome.query
@@ -114,6 +114,17 @@ def _load_real_data() -> tuple[pd.DataFrame | None, int]:
             })
 
         return pd.DataFrame(rows), count
+
+    try:
+        if has_app_context():
+            return _query()
+        else:
+            app = create_app()
+            with app.app_context():
+                return _query()
+    except Exception as exc:
+        print(f"[INFO] Database real data query skipped ({exc}). Falling back to synthetic training data.")
+        return None, 0
 
 
 def _load_synthetic_data() -> pd.DataFrame:
