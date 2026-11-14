@@ -59,15 +59,58 @@ class Config:
         port = os.environ.get('DB_PORT', '3306')
         return f"mysql+pymysql://{user}:{password}@{host}:{port}/{db_name}"
 
+    @staticmethod
+    def get_ssl_ca_bundle() -> str | None:
+        """
+        Locates the system CA bundle for server certificate verification.
+        Prioritizes DB_SSL_CA if provided; falls back to certifi on Windows
+        or standard Linux CA bundle paths.
+        """
+        custom_ca = os.environ.get('DB_SSL_CA')
+        if custom_ca:
+            return custom_ca.strip()
+
+        # Try certifi (standard on Windows and virtualenvs)
+        try:
+            import certifi
+            c = certifi.where()
+            if os.path.exists(c):
+                return c
+        except ImportError:
+            pass
+
+        # Try standard Linux system CA paths
+        system_paths = [
+            '/etc/ssl/certs/ca-certificates.crt',                # Debian/Ubuntu/Gentoo
+            '/etc/pki/tls/certs/ca-bundle.crt',                  # Fedora/RHEL 6
+            '/etc/ssl/ca-bundle.pem',                            # OpenSUSE
+            '/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem', # CentOS/RHEL 7+
+            '/etc/ssl/cert.pem',                                 # Alpine, macOS
+        ]
+        for path in system_paths:
+            if os.path.exists(path):
+                return path
+
+        # Try Python standard library default verify paths
+        try:
+            import ssl
+            paths = ssl.get_default_verify_paths()
+            if paths.cafile and os.path.exists(paths.cafile):
+                return paths.cafile
+        except Exception:
+            pass
+
+        return None
+
     @property
     def SQLALCHEMY_ENGINE_OPTIONS(self):
-        """Database engine options, including optional SSL support for cloud MySQL."""
+        """Database engine options, including verified SSL support for cloud MySQL/TiDB."""
         opts = {}
         if os.environ.get('DB_SSL', '').lower() in ('true', '1', 'yes'):
-            ssl_args = {'check_hostname': False}
-            ca_cert = os.environ.get('DB_SSL_CA')
-            if ca_cert:
-                ssl_args['ca'] = ca_cert
+            ssl_args = {'check_hostname': True}
+            ca_bundle = Config.get_ssl_ca_bundle()
+            if ca_bundle:
+                ssl_args['ca'] = ca_bundle
             opts['connect_args'] = {'ssl': ssl_args}
         return opts
 

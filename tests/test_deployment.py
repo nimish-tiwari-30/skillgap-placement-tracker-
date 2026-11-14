@@ -72,18 +72,20 @@ def test_database_url_overrides_db_vars_and_handles_special_characters(monkeypat
 
 
 def test_db_ssl_engine_options(monkeypatch):
-    """Test that DB_SSL=true configures connect_args['ssl'] in Config."""
+    """Test that DB_SSL=true configures connect_args['ssl'] in Config with certificate verification."""
     monkeypatch.setenv('DB_SSL', 'true')
     cfg = Config()
     opts = cfg.SQLALCHEMY_ENGINE_OPTIONS
     assert 'connect_args' in opts
     assert 'ssl' in opts['connect_args']
-    assert opts['connect_args']['ssl']['check_hostname'] is False
+    assert opts['connect_args']['ssl']['check_hostname'] is True
+    assert 'ca' in opts['connect_args']['ssl']
 
-    # Also test with DB_SSL_CA
-    monkeypatch.setenv('DB_SSL_CA', '/path/to/ca.pem')
+    # Also test with custom DB_SSL_CA
+    monkeypatch.setenv('DB_SSL_CA', '/path/to/custom_ca.pem')
     opts_ca = Config().SQLALCHEMY_ENGINE_OPTIONS
-    assert opts_ca['connect_args']['ssl']['ca'] == '/path/to/ca.pem'
+    assert opts_ca['connect_args']['ssl']['check_hostname'] is True
+    assert opts_ca['connect_args']['ssl']['ca'] == '/path/to/custom_ca.pem'
 
 
 def test_behind_proxy_applies_proxy_fix(monkeypatch):
