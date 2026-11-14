@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Manage Job Postings{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">Job Postings & Descriptions</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Manage company job descriptions, auto-extract required skills, and configure weights.</p>
+        </div>
+        <a href="{{ url_for('admin.create_job') }}" class="btn btn-primary" id="post-job-btn">
+            <i class="bi bi-plus-lg me-1"></i>Post New Job
+        </a>
+    </div>
+
+    <!-- Search & Filter Card -->
+    <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:12px; background:var(--card-bg);">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin.jobs') }}" class="row g-2 align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text" style="background:transparent; border-color:var(--border-color);">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input class="form-control" type="search" name="q" value="{{ q }}"
+                               placeholder="Search title, company, description..." id="job-search-box"
+                               style="border-color:var(--border-color);">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="role_id" id="job-role-filter" style="border-color:var(--border-color);">
+                        <option value="">All Job Roles</option>
+                        {% for role in roles %}
+                        <option value="{{ role.id }}" {% if active_role_id == role.id %}selected{% endif %}>
+                            {{ role.title }}{% if role.department %} ({{ role.department }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" id="filter-submit-btn">
+                        <i class="bi bi-funnel me-1"></i>Filter
+                    </button>
+                    {% if q or active_role_id %}
+                    <a href="{{ url_for('admin.jobs') }}" class="btn btn-outline-secondary">Reset</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; overflow:hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                    <tr>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Job Title & Company</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Job Role</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Location & Exp</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600; text-align:center;">Required Skills</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600; text-align:center;">Status</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600; text-align:end;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if jobs %}
+                    {% for job in jobs %}
+                    <tr id="job-row-{{ job.id }}">
+                        <td style="padding:14px 16px;">
+                            <div class="fw-bold text-dark" style="font-size:14px;">{{ job.title }}</div>
+                            <div class="text-muted" style="font-size:12px;">
+                                <i class="bi bi-building me-1"></i>{{ job.company_name }}
+                            </div>
+                        </td>
+                        <td style="padding:14px 16px;">
+                            <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:11px; font-weight:600; padding:6px 10px;">
+                                {{ job.job_role.title }}
+                            </span>
+                        </td>
+                        <td style="padding:14px 16px; font-size:13px; color:var(--text-muted);">
+                            <div><i class="bi bi-geo-alt me-1"></i>{{ job.location or 'Remote' }}</div>
+                            <div><i class="bi bi-clock-history me-1"></i>{{ job.min_experience or '0-1 years' }}</div>
+                        </td>
+                        <td style="text-align:center; padding:14px 16px;">
+                            <a href="{{ url_for('admin.job_skills_review', job_id=job.id) }}"
+                               class="badge rounded-pill text-decoration-none"
+                               style="background:rgba(16, 185, 129, 0.12); color:#059669; font-size:12px; font-weight:600; padding:6px 12px;"
+                               title="Click to view/edit skill weights">
+                                <i class="bi bi-check-circle me-1"></i>{{ job.job_skills | length }} skill(s)
+                            </a>
+                        </td>
+                        <td style="text-align:center; padding:14px 16px;">
+                            {% if job.is_active %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:11px;">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style="font-size:11px;">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:end; padding:14px 16px;">
+                            <div class="d-inline-flex gap-1">
+                                <!-- Review Skills -->
+                                <a href="{{ url_for('admin.job_skills_review', job_id=job.id) }}"
+                                   class="btn btn-sm btn-outline-primary" title="Review Required Skills">
+                                    <i class="bi bi-tags"></i>
+                                </a>
+                                <!-- Edit Job -->
+                                <a href="{{ url_for('admin.edit_job', job_id=job.id) }}"
+                                   class="btn btn-sm btn-outline-secondary" title="Edit Job Details">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <!-- Delete Job -->
+                                <form method="POST" action="{{ url_for('admin.delete_job', job_id=job.id) }}"
+                                      onsubmit="return confirm('Are you sure you want to delete job \'{{ job.title }}\'?');"
+                                      class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Job">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-briefcase fs-2 d-block mb-2 text-secondary"></i>
+                            No job descriptions found.
+                            {% if q or active_role_id %}Try resetting the search filters.{% else %}Click "Post New Job" to create a job listing.{% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

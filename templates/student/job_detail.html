@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} | Job Details{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header Navigation -->
+    <div class="mb-4">
+        <a href="{{ url_for('student.jobs') }}" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left me-1"></i>Back to All Jobs
+        </a>
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:12px; font-weight:600; padding:6px 12px;">
+                        {{ job.job_role.title }}
+                    </span>
+                    {% if job.job_role.department %}
+                    <span class="text-muted" style="font-size:13px;">&bull; {{ job.job_role.department }}</span>
+                    {% endif %}
+                </div>
+                <h2 class="fw-bold mb-1" style="font-size:26px;">{{ job.title }}</h2>
+                <div class="text-muted" style="font-size:14px;">
+                    <i class="bi bi-building me-1"></i><strong>{{ job.company_name }}</strong>
+                    <span class="mx-2">&bull;</span>
+                    <i class="bi bi-geo-alt me-1"></i>{{ job.location or 'Remote' }}
+                    <span class="mx-2">&bull;</span>
+                    <i class="bi bi-clock-history me-1"></i>Min Exp: {{ job.min_experience or '0-1 years' }}
+                </div>
+            </div>
+
+            <div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2" style="font-size:13px;">
+                    <i class="bi bi-check-circle me-1"></i>Actively Hiring
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 8 Skill Gap Callout -->
+    <div class="alert alert-primary border d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4" style="border-radius:12px; background:var(--primary-bg); border-color:var(--primary-border); color:var(--text-primary);">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-bar-chart-gaps text-primary fs-3"></i>
+            <div style="font-size:13px;">
+                <strong>Skill Gap Analysis Available:</strong> Compare your profile against the required competencies for
+                <strong>{{ job.title }}</strong> to see your coverage and weighted match percentages.
+            </div>
+        </div>
+        <a href="{{ url_for('student.skill_gap', job_id=job.id) }}" class="btn btn-primary btn-sm px-3">
+            <i class="bi bi-calculator me-1"></i>Analyze My Skill Gap
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Job Description -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-light py-3 border-bottom">
+                    <h5 class="fw-bold mb-0" style="font-size:15px;">
+                        <i class="bi bi-file-text me-2 text-primary"></i>Job Description & Responsibilities
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div style="font-size:14px; line-height:1.7; white-space:pre-line; color:var(--text-color);">
+                        {{ job.description_text }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Required Technical Skills -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-light py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0" style="font-size:15px;">
+                        <i class="bi bi-stars me-1 text-warning"></i>Required Skills
+                    </h5>
+                    <span class="badge bg-primary rounded-pill">{{ job_skills | length }}</span>
+                </div>
+                <div class="card-body p-3">
+                    {% if job_skills %}
+                    <p class="text-muted mb-3" style="font-size:12px;">Skills required by {{ job.company_name }} with importance weightings:</p>
+                    <div class="d-flex flex-column gap-2">
+                        {% for js in job_skills %}
+                        <div class="p-2 rounded d-flex justify-content-between align-items-center border" style="background:var(--main-bg); border-color:var(--border-color); font-size:13px;">
+                            <div>
+                                <span class="fw-semibold">{{ js.skill.name }}</span>
+                                <small class="text-muted d-block" style="font-size:10px;">{{ js.skill.category or 'General' }}</small>
+                            </div>
+                            <div>
+                                {% if js.importance_weight == 5 %}
+                                <span class="badge bg-danger text-white" style="font-size:11px;">Critical</span>
+                                {% elif js.importance_weight == 4 %}
+                                <span class="badge bg-warning-subtle text-warning-emphasis border" style="font-size:11px;">High</span>
+                                {% elif js.importance_weight == 3 %}
+                                <span class="badge bg-primary-subtle text-primary border" style="font-size:11px;">Required</span>
+                                {% elif js.importance_weight == 2 %}
+                                <span class="badge bg-info-subtle text-info-emphasis border" style="font-size:11px;">Desirable</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary border" style="font-size:11px;">Nice to have</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center my-3" style="font-size:13px;">No specific skills recorded for this listing.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Job Summary Card -->
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-3" style="font-size:13px;">
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Target Career:</span>
+                        <strong class="text-dark">{{ job.job_role.title }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Company:</span>
+                        <strong class="text-dark">{{ job.company_name }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Work Location:</span>
+                        <strong class="text-dark">{{ job.location or 'Remote' }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                        <span class="text-muted">Experience Level:</span>
+                        <strong class="text-dark">{{ job.min_experience or '0-1 years' }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted">Posted Date:</span>
+                        <span class="text-dark">{{ job.created_at.strftime('%d %b %Y') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

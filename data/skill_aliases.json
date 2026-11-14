@@ -1,0 +1,166 @@
+{
+  "Python": [
+    "Python Programming",
+    "Python3",
+    "Py"
+  ],
+  "Java": [
+    "Java SE",
+    "Java EE",
+    "Core Java"
+  ],
+  "C": [
+    "C Programming"
+  ],
+  "C++": [
+    "CPP",
+    "C Plus Plus"
+  ],
+  "JavaScript": [
+    "JS",
+    "ECMAScript",
+    "ES6"
+  ],
+  "TypeScript": [
+    "TS"
+  ],
+  "R": [
+    "R Language",
+    "R Programming"
+  ],
+  "Go": [
+    "Golang"
+  ],
+  "Kotlin": [],
+  "SQL": [
+    "MySQL Query",
+    "Structured Query Language"
+  ],
+  "Excel": [
+    "MS Excel",
+    "Microsoft Excel",
+    "Spreadsheets"
+  ],
+  "Power BI": [
+    "Power-BI",
+    "PowerBI",
+    "Microsoft Power BI"
+  ],
+  "Tableau": [],
+  "Pandas": [],
+  "NumPy": [],
+  "Statistics": [],
+  "HTML": [
+    "HTML5"
+  ],
+  "CSS": [
+    "CSS3"
+  ],
+  "React": [
+    "ReactJS",
+    "React.js"
+  ],
+  "Node.js": [
+    "Node",
+    "NodeJS",
+    "Node JS"
+  ],
+  "Flask": [],
+  "Django": [],
+  "Bootstrap": [
+    "Bootstrap 5"
+  ],
+  "MySQL": [],
+  "PostgreSQL": [
+    "Postgres",
+    "PostgreSQL DB",
+    "PSQL"
+  ],
+  "MongoDB": [
+    "Mongo"
+  ],
+  "SQLite": [],
+  "Redis": [],
+  "Git": [
+    "Git Version Control"
+  ],
+  "GitHub": [],
+  "Docker": [],
+  "Linux": [
+    "Linux CLI",
+    "Unix/Linux"
+  ],
+  "AWS": [
+    "Amazon Web Services",
+    "Amazon AWS"
+  ],
+  "Machine Learning": [
+    "ML",
+    "Machine-Learning",
+    "ML Algorithms"
+  ],
+  "Deep Learning": [
+    "DL",
+    "Deep-Learning"
+  ],
+  "scikit-learn": [
+    "Sklearn",
+    "Scikit Learn",
+    "sklearn"
+  ],
+  "TensorFlow": [
+    "TF"
+  ],
+  "NLP": [
+    "Natural Language Processing"
+  ],
+  "Jupyter Notebook": [
+    "Jupyter",
+    "Jupyter Lab"
+  ],
+  "VS Code": [
+    "VSCode"
+  ],
+  "Postman": [],
+  "Figma": [],
+  "Selenium": [
+    "Selenium WebDriver"
+  ],
+  "JIRA": [
+    "Jira Software"
+  ],
+  "Manual Testing": [
+    "QA Testing",
+    "Software Testing"
+  ],
+  "Automated Testing": [
+    "Automation Testing",
+    "Test Automation"
+  ],
+  "Unit Testing": [
+    "Unit Tests",
+    "PyTest",
+    "JUnit"
+  ],
+  "Kubernetes": [
+    "K8s",
+    "K8"
+  ],
+  "CI/CD": [
+    "Continuous Integration",
+    "CI CD",
+    "Jenkins"
+  ],
+  "REST API": [
+    "REST APIs",
+    "RESTful APIs",
+    "RESTful API"
+  ],
+  "Communication": [],
+  "Team Collaboration": [
+    "Teamwork",
+    "Team Work"
+  ],
+  "Problem Solving": [],
+  "Time Management": []
+}

@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Placement Outcome Predictor{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page">ML Placement Prediction</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-cpu text-primary me-2"></i>Placement Outcome Predictor
+            </h3>
+            <p class="text-muted mb-0 small">
+                Machine learning estimation of employment outcome based on academic performance, skills, and readiness factors.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.profile', tab='academic') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-pencil-square me-1"></i>Update Profile & Scores
+            </a>
+            <a href="{{ url_for('student.learning_path') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-mortarboard me-1"></i>Bridge Skill Gaps
+            </a>
+        </div>
+    </div>
+
+    <!-- Demo Model Disclaimer Banner -->
+    {% if prediction.is_demo %}
+    <div class="alert alert-warning border-0 shadow-sm rounded-3 mb-4 d-flex align-items-start gap-3">
+        <i class="bi bi-exclamation-triangle-fill fs-3 text-warning flex-shrink-0 mt-1"></i>
+        <div>
+            <h6 class="fw-bold mb-1">Demo Mode: Not enough real historical data yet</h6>
+            <p class="mb-1 small text-dark">
+                {{ prediction.disclaimer }}
+            </p>
+            <span class="badge bg-warning text-dark">Mode: Synthetic (Simulated Baseline)</span>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info border-0 shadow-sm rounded-3 mb-4 d-flex align-items-start gap-3">
+        <i class="bi bi-info-circle-fill fs-3 text-info flex-shrink-0 mt-1"></i>
+        <div>
+            <h6 class="fw-bold mb-1">Empirical Production Model</h6>
+            <p class="mb-0 small text-dark">
+                {{ prediction.disclaimer }}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not prediction.success %}
+    <!-- Error State -->
+    <div class="card border-0 shadow-sm rounded-3 p-4 text-center">
+        <div class="py-5">
+            <i class="bi bi-exclamation-octagon text-danger display-4 mb-3"></i>
+            <h5 class="fw-bold text-danger">Prediction Unavailable</h5>
+            <p class="text-muted">{{ prediction.error }}</p>
+            <a href="{{ url_for('student.profile') }}" class="btn btn-primary mt-2">Check Profile</a>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="row g-4 mb-4">
+        <!-- Main Prediction Result Card -->
+        <div class="col-lg-5 col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="card-body d-flex flex-column justify-content-between text-center">
+                    <div>
+                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill small mb-3">
+                            <i class="bi bi-activity me-1 text-primary"></i>Random Forest Classifier
+                        </span>
+                        
+                        <div class="alert alert-light border small text-dark mb-3">
+                            <strong>Predicted outcome based on available historical data:</strong> 
+                            <span class="fw-bold {% if prediction.label == 'Placed' %}text-success{% else %}text-danger{% endif %}">{{ prediction.label }}</span>
+                        </div>
+
+                        <!-- Prediction Outcome Badge -->
+                        <div class="my-3">
+                            {% if prediction.label == 'Placed' %}
+                            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill bg-success-subtle text-success border border-success-subtle">
+                                <i class="bi bi-check-circle-fill fs-4"></i>
+                                <span class="fs-4 fw-bold">Likely Placed</span>
+                            </div>
+                            {% else %}
+                            <div class="d-inline-flex align-items-center gap-2 px-4 py-2 rounded-pill bg-danger-subtle text-danger border border-danger-subtle">
+                                <i class="bi bi-exclamation-circle-fill fs-4"></i>
+                                <span class="fs-4 fw-bold">Needs Skill Uplift</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Placement Probability Meter -->
+                        <div class="my-4">
+                            <div class="display-5 fw-bold {% if prediction.label == 'Placed' %}text-success{% else %}text-danger{% endif %}">
+                                {{ prediction.probability_pct }}%
+                            </div>
+                            <div class="text-muted small">Estimated Placement Probability</div>
+
+                            <div class="progress mt-3" style="height: 12px; border-radius: 8px;">
+                                <div class="progress-bar {% if prediction.label == 'Placed' %}bg-success{% else %}bg-danger{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ prediction.probability_pct }}%;" 
+                                     aria-valuenow="{{ prediction.probability_pct }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Confidence Tier & Meta -->
+                    <div class="border-top pt-3 mt-3 text-start">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="text-muted small">Prediction Confidence:</span>
+                            <span class="badge {% if prediction.confidence == 'High' %}bg-success{% elif prediction.confidence == 'Medium' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                {{ prediction.confidence }} Confidence
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="text-muted small">Model Architecture:</span>
+                            <span class="fw-semibold small">Random Forest (200 Estimators)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Breakdown Card -->
+        <div class="col-lg-7 col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="fw-bold mb-1">
+                        <i class="bi bi-sliders text-primary me-2"></i>Features Extracted From Profile
+                    </h5>
+                    <p class="text-muted small mb-3">
+                        Only pre-placement indicators are supplied to prevent data leakage.
+                    </p>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Feature Factor</th>
+                                    <th>Your Current Value</th>
+                                    <th>Status / Signal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for name, val in prediction.feature_values.items() %}
+                                <tr>
+                                    <td class="fw-semibold text-secondary">{{ name }}</td>
+                                    <td>
+                                        <span class="fw-bold text-dark">
+                                            {% if name == 'Has Internship' %}
+                                                {{ 'Yes' if val else 'No' }}
+                                            {% elif 'Score' in name or '%' in name %}
+                                                {{ val }}{% if '%' in name %}%{% endif %}
+                                            {% else %}
+                                                {{ val }}
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if name == 'CGPA' %}
+                                            <span class="badge {% if val >= 8.0 %}bg-success{% elif val >= 6.5 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ 'Strong' if val >= 8.0 else ('Adequate' if val >= 6.5 else 'Needs Boost') }}
+                                            </span>
+                                        {% elif name == 'Skills Count' %}
+                                            <span class="badge {% if val >= 7 %}bg-success{% elif val >= 4 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ 'Rich' if val >= 7 else ('Moderate' if val >= 4 else 'Low') }}
+                                            </span>
+                                        {% elif name == 'Skill Match %' %}
+                                            <span class="badge {% if val >= 70 %}bg-success{% elif val >= 40 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ 'Aligned' if val >= 70 else ('Partial' if val >= 40 else 'Low Match') }}
+                                            </span>
+                                        {% elif name == 'Aptitude Score' %}
+                                            <span class="badge {% if val >= 70 %}bg-success{% elif val >= 50 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ 'High' if val >= 70 else ('Average' if val >= 50 else 'Below Average') }}
+                                            </span>
+                                        {% elif name == 'Communication Score' %}
+                                            <span class="badge {% if val >= 70 %}bg-success{% elif val >= 50 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ 'High' if val >= 70 else ('Average' if val >= 50 else 'Below Average') }}
+                                            </span>
+                                        {% elif name == 'Has Internship' %}
+                                            <span class="badge {% if val %}bg-success{% else %}bg-secondary{% endif %}">
+                                                {{ 'Experienced' if val else 'No Internship' }}
+                                            </span>
+                                        {% elif name == 'Profile Completion %' %}
+                                            <span class="badge {% if val >= 80 %}bg-success{% elif val >= 50 %}bg-info{% else %}bg-warning text-dark{% endif %}">
+                                                {{ val }}% Done
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feature Importances Contribution Breakdown -->
+    <div class="card border-0 shadow-sm rounded-3 p-4 mb-4 mt-4">
+        <h5 class="fw-bold mb-2">
+            <i class="bi bi-bar-chart-steps text-primary me-2"></i>Global Feature Importances
+        </h5>
+        <p class="text-muted small mb-3">Relative statistical weight each parameter carries across our Random Forest decision trees:</p>
+        <div class="row g-3">
+            {% for fname, fweight in prediction.feature_importances.items() %}
+            <div class="col-md-3 col-sm-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small fw-semibold text-secondary text-capitalize">{{ fname.replace('_', ' ') }}</span>
+                        <span class="badge bg-primary-subtle text-primary fw-bold">{{ (fweight * 100) | round(1) }}%</span>
+                    </div>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (fweight * 100 * 2.5) | round }}%;"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recommendations / Actionable Steps -->
+    <div class="card border-0 shadow-sm rounded-3 p-4 mb-4">
+        <h5 class="fw-bold mb-3">
+            <i class="bi bi-lightbulb text-warning me-2"></i>Actionable Improvement Roadmap
+        </h5>
+        <div class="row g-3">
+            {% if suggestions %}
+                {% for sug in suggestions %}
+                <div class="col-md-6">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex gap-3">
+                        <div class="fs-3 text-primary flex-shrink-0">
+                            <i class="bi {{ sug.icon }}"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold mb-1">{{ sug.title }}</h6>
+                            <p class="text-muted small mb-0">{{ sug.desc }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="p-3 border rounded-3 bg-success-subtle text-success">
+                        <i class="bi bi-award-fill me-2"></i>
+                        <strong>Outstanding Profile!</strong> Your academic, skill, and aptitude parameters are well balanced. Keep maintaining your hands-on projects and interview preparation.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Limitations Box -->
+    <div class="card border-0 shadow-sm rounded-3 p-4 border-start border-warning border-4">
+        <h5 class="fw-bold mb-2 text-dark">
+            <i class="bi bi-shield-exclamation text-warning me-2"></i>Model Limitations
+        </h5>
+        <div class="small text-muted">
+            <ul class="mb-0 ps-3">
+                <li><strong>Statistical Estimate Only:</strong> All model outputs are statistical estimates based on historical patterns — not a placement guarantee.</li>
+                <li><strong>Data Sufficiency Baseline:</strong> When fewer than 100 real historical placement outcomes are recorded, the system operates in demo mode on synthetic baseline data.</li>
+                <li><strong>Feature Scope:</strong> Only factors available strictly <em>before</em> placement decisions (CGPA, verified skill coverage, aptitude & communication tests, internships) are included to avoid data leakage.</li>
+                <li><strong>Holistic Interview Factors:</strong> Real-world behavioral rounds, problem-solving under pressure, and specific company hiring criteria lie outside automated feature bounds.</li>
+            </ul>
+        </div>
+    </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

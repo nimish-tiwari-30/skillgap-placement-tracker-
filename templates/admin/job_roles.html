@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Job Roles Management{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">Job Roles Management</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">Manage career target roles and departments for students and job descriptions.</p>
+        </div>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRoleModal" id="add-role-btn">
+            <i class="bi bi-plus-lg me-1"></i>Add Job Role
+        </button>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:12px; background:var(--card-bg);">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('admin.job_roles') }}" class="row g-2 align-items-center">
+                <div class="col-md-9">
+                    <div class="input-group">
+                        <span class="input-group-text" style="background:transparent; border-color:var(--border-color);">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input class="form-control" type="search" name="q" value="{{ q }}"
+                               placeholder="Search role name or department..." id="role-search-box"
+                               style="border-color:var(--border-color);">
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1" id="filter-submit-btn">
+                        <i class="bi bi-funnel me-1"></i>Search
+                    </button>
+                    {% if q %}
+                    <a href="{{ url_for('admin.job_roles') }}" class="btn btn-outline-secondary">Clear</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Job Roles Table -->
+    <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; overflow:hidden;">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                    <tr>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">#</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Role Name</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Department</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600;">Description</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600; text-align:center;">Jobs Linked</th>
+                        <th style="font-size:12px; padding:14px 16px; font-weight:600; text-align:end;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% if roles %}
+                    {% for role in roles %}
+                    <tr id="role-row-{{ role.id }}">
+                        <td style="font-size:13px; padding:12px 16px; color:var(--text-muted);">{{ loop.index }}</td>
+                        <td style="font-size:14px; padding:12px 16px;">
+                            <span class="fw-semibold text-dark">{{ role.title }}</span>
+                        </td>
+                        <td style="padding:12px 16px;">
+                            {% if role.department %}
+                            <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:11px; font-weight:600; padding:6px 10px;">
+                                {{ role.department }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted" style="font-size:12px;">—</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size:13px; padding:12px 16px; color:var(--text-muted); max-width:280px;">
+                            {{ role.description or 'No description provided.' }}
+                        </td>
+                        <td style="text-align:center; padding:12px 16px;">
+                            <span class="badge rounded-pill bg-light text-dark border" style="font-size:11px;">
+                                {{ role.job_descriptions | length }}
+                            </span>
+                        </td>
+                        <td style="text-align:end; padding:12px 16px;">
+                            <div class="d-inline-flex gap-1">
+                                <!-- Edit Button triggers Edit Modal -->
+                                <button type="button" class="btn btn-sm btn-outline-secondary edit-role-btn"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#editRoleModal"
+                                        data-role-id="{{ role.id }}"
+                                        data-role-title="{{ role.title }}"
+                                        data-role-department="{{ role.department or '' }}"
+                                        data-role-description="{{ role.description or '' }}"
+                                        title="Edit Role">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <!-- Delete Button -->
+                                <form method="POST" action="{{ url_for('admin.delete_job_role', role_id=role.id) }}"
+                                      onsubmit="return confirm('Are you sure you want to delete role \'{{ role.title }}\'?');"
+                                      class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Role">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="bi bi-briefcase fs-2 d-block mb-2 text-secondary"></i>
+                            No job roles found. {% if q %}Try searching with another keyword.{% else %}Click "Add Job Role" to create one.{% endif %}
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal: Add Job Role -->
+<div class="modal fade" id="addRoleModal" tabindex="-1" aria-labelledby="addRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <form method="POST" action="{{ url_for('admin.create_job_role') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="addRoleModalLabel">Add New Job Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Role Name <span class="text-danger">*</span></label>
+                        {{ form.title(class="form-control", placeholder="e.g. Data Analyst, Backend Developer", required=true, id="add-role-title") }}
+                        <div class="form-text" style="font-size:11px;">Must be a unique career role name.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Department</label>
+                        {{ form.department(class="form-control", placeholder="e.g. Engineering, Data Science, Quality Assurance", id="add-role-dept") }}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Description</label>
+                        {{ form.description(class="form-control", rows="3", placeholder="Brief description of responsibilities and scope...", id="add-role-desc") }}
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="add-role-submit-btn">Save Job Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Job Role -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <form method="POST" id="editRoleForm" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="editRoleModalLabel">Edit Job Role</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Role Name <span class="text-danger">*</span></label>
+                        <input type="text" name="title" id="edit-role-title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Department</label>
+                        <input type="text" name="department" id="edit-role-dept" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Description</label>
+                        <textarea name="description" id="edit-role-desc" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="edit-role-submit-btn">Update Job Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editModal = document.getElementById('editRoleModal');
+    if (editModal) {
+        editModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const roleId = button.getAttribute('data-role-id');
+            const roleTitle = button.getAttribute('data-role-title');
+            const roleDept = button.getAttribute('data-role-department');
+            const roleDesc = button.getAttribute('data-role-description');
+
+            const form = document.getElementById('editRoleForm');
+            form.action = `/admin/job-roles/${roleId}/edit`;
+
+            document.getElementById('edit-role-title').value = roleTitle || '';
+            document.getElementById('edit-role-dept').value = roleDept || '';
+            document.getElementById('edit-role-desc').value = roleDesc || '';
+        });
+    }
+});
+</script>
+
+{% endblock %}

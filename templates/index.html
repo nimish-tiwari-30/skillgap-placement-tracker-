@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Skill Gap & Employment Outcome Tracking System — Close the gap between classroom education and industry employment.">
+    <title>SkillGap AI — Career &amp; Employment Intelligence Platform</title>
+
+    <!-- Inline Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body class="landing-wrapper">
+
+    <!-- Top Landing Navbar -->
+    <header class="landing-navbar" role="banner">
+        <div class="d-flex align-items-center gap-2">
+            <div class="brand-icon" style="width:36px;height:36px;font-size:18px;">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <span class="fw-bold fs-5 text-dark">SkillGap AI</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-box-arrow-in-right"></i> Sign In
+            </a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus"></i> Get Started
+            </a>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-section" aria-labelledby="hero-heading">
+        <div class="container">
+            <div class="hero-badge">
+                <i class="bi bi-stars"></i> Intelligent Career &amp; Placement Readiness
+            </div>
+            <h1 class="hero-title" id="hero-heading">
+                Bridge the Gap Between Campus Learning &amp; Industry Demands
+            </h1>
+            <p class="hero-subtitle">
+                Extract skills from your resume, analyze curriculum gaps against real job postings, receive curated learning paths, and forecast placement outcomes with predictive intelligence.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg shadow-sm">
+                    <i class="bi bi-rocket-takeoff"></i> Start Your Analysis Free
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-secondary btn-lg">
+                    <i class="bi bi-box-arrow-in-right"></i> Sign In to Account
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4 Key Feature Cards -->
+    <section class="container my-5" aria-labelledby="features-heading">
+        <div class="text-center mb-5">
+            <h2 class="h3 fw-bold" id="features-heading">Engineered for Academic &amp; Placement Excellence</h2>
+            <p class="text-secondary small">Four core intelligent modules driving student success and institutional insights</p>
+        </div>
+
+        <div class="features-grid">
+            <!-- 1. Resume Skill Extraction -->
+            <div class="feature-card">
+                <div class="feature-icon-box">
+                    <i class="bi bi-file-earmark-person"></i>
+                </div>
+                <h3 class="feature-title">Resume Skill Extraction</h3>
+                <p class="feature-desc">
+                    Upload your PDF or DOCX resume. Our automated extraction pipeline discovers technical competencies, certifications, and project experience instantly.
+                </p>
+            </div>
+
+            <!-- 2. Skill Gap Analysis -->
+            <div class="feature-card">
+                <div class="feature-icon-box">
+                    <i class="bi bi-bar-chart-steps"></i>
+                </div>
+                <h3 class="feature-title">Skill-Gap Analysis</h3>
+                <p class="feature-desc">
+                    Compare student proficiencies against target market job profiles. Quantify required, preferred, and missing competencies with actionable coverage scores.
+                </p>
+            </div>
+
+            <!-- 3. Job Matching & Recommendation -->
+            <div class="feature-card">
+                <div class="feature-icon-box">
+                    <i class="bi bi-bullseye"></i>
+                </div>
+                <h3 class="feature-title">Smart Job Matching</h3>
+                <p class="feature-desc">
+                    Vectorized cosine similarity and keyword matching connect students with high-affinity job postings and recommend targeted courses to close missing gaps.
+                </p>
+            </div>
+
+            <!-- 4. Placement & Outcome Analytics -->
+            <div class="feature-card">
+                <div class="feature-icon-box">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <h3 class="feature-title">Placement &amp; ML Analytics</h3>
+                <p class="feature-desc">
+                    Interactive institutional analytics powered by Pandas, salary trends, branch-level placement ratios, and Random Forest employment outcome forecasting.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works 4-Step Strip -->
+    <section class="how-it-works-strip" aria-labelledby="steps-heading">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="h3 fw-bold" id="steps-heading">How It Works</h2>
+                <p class="text-secondary small">Four simple steps from enrollment to industry placement readiness</p>
+            </div>
+
+            <div class="steps-container">
+                <div class="step-item">
+                    <div class="step-number">1</div>
+                    <h3 class="step-title">Build Profile &amp; Upload</h3>
+                    <p class="step-desc">Create your student profile and upload your resume for automatic parsing and verification.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">2</div>
+                    <h3 class="step-title">Set Target Career</h3>
+                    <p class="step-desc">Pick your dream job or company profile to benchmark your current skills against industry requirements.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">3</div>
+                    <h3 class="step-title">Follow Learning Path</h3>
+                    <p class="step-desc">Complete personalized step-by-step course and project modules designed specifically to bridge your gaps.</p>
+                </div>
+
+                <div class="step-item">
+                    <div class="step-number">4</div>
+                    <h3 class="step-title">Track &amp; Get Placed</h3>
+                    <p class="step-desc">Monitor proficiency growth on interactive charts and unlock validated job matches for recruitment drives.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Banner & Disclaimer -->
+    <section class="py-4 bg-light text-center border-top">
+        <div class="container">
+            <span class="badge bg-secondary-subtle text-secondary-emphasis px-3 py-2">
+                <i class="bi bi-info-circle me-1"></i> Demo Academic Project &mdash; All training data, company names, and salary numbers are synthetic.
+            </span>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="page-footer" role="contentinfo">
+        <div class="container d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <span>&copy; {{ current_year }} SkillGap AI &bull; Skill Gap &amp; Employment Outcome Tracking System</span>
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ url_for('auth.login') }}" class="text-decoration-none text-muted small">Sign In</a>
+                <a href="{{ url_for('auth.register') }}" class="text-decoration-none text-muted small">Register</a>
+                <a href="{{ url_for('health_check') }}" class="text-decoration-none text-muted small">System Status</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

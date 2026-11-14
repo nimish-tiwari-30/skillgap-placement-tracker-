@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:24px;">
+                <i class="bi bi-map text-primary me-2"></i>Structured Learning Path
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13.5px;">
+                Your step-by-step career milestone roadmap to bridge skill gaps and achieve job readiness.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            {% if job_id %}
+            <a href="{{ url_for('student.recommendations', job_id=job_id) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-mortarboard me-1"></i>Course Catalog
+            </a>
+            <a href="{{ url_for('student.skill_gap', job_id=job_id) }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-bar-chart-gaps me-1"></i>Skill Gap
+            </a>
+            {% else %}
+            <a href="{{ url_for('student.skill_gap') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-bar-chart-gaps me-1"></i>Skill Gap Center
+            </a>
+            {% endif %}
+            <a href="{{ url_for('student.progress') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-graph-up-arrow me-1"></i>My Progress
+            </a>
+        </div>
+    </div>
+
+    <!-- Error Alert if any -->
+    {% if error_msg %}
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-4" role="alert" style="border-radius:12px;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ error_msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <!-- Target Job Selector & Synchronize Bar -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-4">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-7 col-lg-8">
+                    <form method="GET" action="{{ url_for('student.learning_path') }}" id="job-select-form">
+                        <label for="learningPathJobSelect" class="form-label fw-bold mb-1" style="font-size:13px;">
+                            Target Career Posting:
+                        </label>
+                        <select class="form-select" id="learningPathJobSelect" name="job_id" onchange="this.form.submit()"
+                                style="font-size:13.5px; border-radius:10px;">
+                            <option value="" disabled {% if not job_id %}selected{% endif %}>-- Choose an active job posting --</option>
+                            {% for j in all_active_jobs %}
+                            <option value="{{ j.id }}" {% if job_id == j.id %}selected{% endif %}>
+                                {{ j.title }} &mdash; {{ j.company_name or 'N/A' }} ({{ j.job_role.title if j.job_role else 'Role' }})
+                                {% if student.target_job_id == j.id %} &bull; [Current Target]{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </form>
+                </div>
+
+                <div class="col-md-5 col-lg-4">
+                    {% if job_id %}
+                    <form method="POST" action="{{ url_for('student.generate_learning_path') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <input type="hidden" name="job_id" value="{{ job_id }}">
+                        <button type="submit" class="btn btn-outline-primary w-100" style="font-size:13.5px; border-radius:10px; padding:8px 16px;">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Generate / Refresh Path
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if target_job %}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 mt-3 border-top" style="font-size:12.5px;">
+                <div class="text-muted">
+                    Target Role: <strong class="text-dark">{{ target_job.title }}</strong>
+                    {% if target_job.company_name %} at <strong class="text-dark">{{ target_job.company_name }}</strong>{% endif %}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <a href="{{ url_for('student.job_detail', job_id=job_id) }}" class="text-primary text-decoration-none">
+                        View Job Specs <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Empty State: No Target Job Selected -->
+    {% if not job_id %}
+    <div class="card shadow-sm text-center py-5" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                     style="width:72px; height:72px; background:rgba(99, 102, 241, 0.1); color:var(--primary); font-size:32px;">
+                    <i class="bi bi-signpost-split"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2">No Target Job Selected</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width:520px; font-size:14px;">
+                Pick a target job from the dropdown above to create an automated step-by-step roadmap tailored specifically to your missing competencies.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('student.skill_gap') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-pin-angle me-1"></i>Select Target in Skill Gap Center
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% elif path_data %}
+
+        <!-- Overall Progress Card -->
+        <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="text-muted text-uppercase fw-semibold" style="font-size:11.5px; letter-spacing:0.5px;">Path Progress</span>
+                        <h5 class="fw-bold mb-0 text-dark">
+                            {{ path_data.completed_items }} of {{ path_data.total_items }} Milestones Completed
+                        </h5>
+                    </div>
+                    <div class="text-end">
+                        <span class="fw-bold text-primary" style="font-size:24px;">{{ "%.1f"|format(path_data.completion_pct) }}%</span>
+                    </div>
+                </div>
+
+                <div class="progress mb-3" style="height:12px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                    <div class="progress-bar {% if path_data.completion_pct >= 100 %}bg-success{% elif path_data.completion_pct >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                         role="progressbar"
+                         style="width: {{ path_data.completion_pct }}%; border-radius:99px; transition:width 0.4s ease;"
+                         aria-valuenow="{{ path_data.completion_pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:12px;">
+                    <span><i class="bi bi-flag me-1 text-primary"></i>Phased Sequencing: Beginner &rarr; Intermediate &rarr; Advanced</span>
+                    <span><i class="bi bi-trophy me-1 text-warning"></i>Capstone Project &amp; Resume updates at finish line</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- All Steps Completed Celebration -->
+        {% if path_data.all_completed %}
+        <div class="card shadow-sm border-0 mb-4 text-center py-5"
+             style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.09) 0%, rgba(59, 130, 246, 0.09) 100%);
+                    border: 1px solid rgba(16, 185, 129, 0.25) !important; border-radius:16px;">
+            <div class="card-body px-4">
+                <span style="font-size:48px;" class="d-block mb-2">🏆</span>
+                <h3 class="fw-bold text-success mb-2">Learning Path 100% Completed!</h3>
+                <p class="text-muted mx-auto mb-4" style="max-width:540px; font-size:14px;">
+                    Congratulations! You have completed every learning phase, capstone project, and resume update milestone for
+                    <strong>{{ path_data.job_title }}</strong>.
+                </p>
+                <div class="d-flex justify-content-center gap-2 flex-wrap">
+                    <a href="{{ url_for('student.progress') }}" class="btn btn-success btn-sm px-3">
+                        <i class="bi bi-graph-up me-1"></i>View Progress Analytics
+                    </a>
+                    <a href="{{ url_for('student.job_matching') }}" class="btn btn-outline-primary btn-sm px-3">
+                        <i class="bi bi-bullseye me-1"></i>Review Job Matches
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Timeline / Checklist of Learning Path Steps -->
+        <div class="d-flex flex-column gap-3" id="learning-path-steps">
+            {% for step in path_data.steps %}
+            <div class="card shadow-sm border"
+                 style="border-color: {% if step.is_completed %}rgba(16, 185, 129, 0.3){% else %}var(--border-color){% endif %} !important;
+                        border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+
+                        <!-- Left: Phase number, Title & Badges -->
+                        <div class="d-flex align-items-start gap-3 flex-grow-1">
+                            <!-- Circular Step Indicator -->
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                 style="width:44px; height:44px; font-weight:700; font-size:15px;
+                                        {% if step.is_completed %}background:rgba(16, 185, 129, 0.15); color:#10b981;
+                                        {% else %}background:rgba(99, 102, 241, 0.1); color:var(--primary);{% endif %}">
+                                {% if step.is_completed %}
+                                <i class="bi bi-check-lg" style="font-size:22px;"></i>
+                                {% else %}
+                                {{ step.phase_number }}
+                                {% endif %}
+                            </div>
+
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                                    <span class="fw-bold text-dark" style="font-size:16px;">
+                                        {{ step.phase_label }}
+                                    </span>
+
+                                    <!-- Status Badge -->
+                                    {% if step.is_completed %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px;">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Completed
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1" style="font-size:11px;">
+                                        <i class="bi bi-hourglass-split me-1"></i>Pending
+                                    </span>
+                                    {% endif %}
+
+                                    <!-- Type Badges -->
+                                    {% if step.item_type == 'skill' %}
+                                        <span class="badge bg-light text-dark border" style="font-size:11px;">
+                                            Skill Milestone
+                                        </span>
+                                    {% elif step.item_type == 'project' %}
+                                        <span class="badge" style="background:rgba(139, 92, 246, 0.12); color:#7c3aed; border:1px solid rgba(139, 92, 246, 0.25); font-size:11px;">
+                                            <i class="bi bi-code-slash me-1"></i>Hands-On Project
+                                        </span>
+                                    {% elif step.item_type == 'resume_update' %}
+                                        <span class="badge" style="background:rgba(245, 158, 11, 0.12); color:#b45309; border:1px solid rgba(245, 158, 11, 0.25); font-size:11px;">
+                                            <i class="bi bi-file-earmark-person me-1"></i>Resume Update
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <p class="text-muted mb-2" style="font-size:13px; line-height:1.45;">
+                                    {{ step.description }}
+                                </p>
+
+                                <!-- Recommended Course Callout if present -->
+                                {% if step.recommended_course %}
+                                <div class="p-2 px-3 border rounded-3 mb-2 d-flex justify-content-between align-items-center flex-wrap gap-2"
+                                     style="background:var(--main-bg); border-color:var(--border-color) !important; font-size:12.5px;">
+                                    <div>
+                                        <span class="text-muted"><i class="bi bi-mortarboard me-1 text-primary"></i>Recommended:</span>
+                                        <strong class="text-dark">{{ step.recommended_course.title }}</strong>
+                                        <span class="text-muted">({{ step.recommended_course.provider }})</span>
+                                        {% if step.recommended_course.rating %}
+                                        <span class="text-warning ms-1">★ {{ "%.1f"|format(step.recommended_course.rating) }}</span>
+                                        {% endif %}
+                                        {% if step.recommended_course.duration_hours %}
+                                        <span class="text-muted ms-1">&bull; {{ step.recommended_course.duration_hours|round|int }} hrs</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if step.recommended_course.url and step.recommended_course.url != '#' %}
+                                    <a href="{{ step.recommended_course.url }}" target="_blank" rel="noopener noreferrer"
+                                       class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size:11.5px;">
+                                        View Course <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                {% elif step.item_type == 'skill' %}
+                                <div class="text-muted mb-2" style="font-size:12px;">
+                                    <i class="bi bi-info-circle me-1"></i>No specific course currently cataloged for this skill.
+                                </div>
+                                {% endif %}
+
+                                {% if step.is_completed and step.completed_at %}
+                                <div class="text-muted" style="font-size:11.5px;">
+                                    <i class="bi bi-calendar-check me-1 text-success"></i>Finished on {{ step.completed_at }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Right: Action Form -->
+                        <div class="d-flex align-items-center gap-2">
+                            {% if step.is_completed %}
+                            <!-- Undo Button -->
+                            <form method="POST" action="{{ url_for('student.undo_learning_step', item_id=step.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <input type="hidden" name="job_id" value="{{ job_id }}">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm" style="font-size:12px; border-radius:8px;">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Undo
+                                </button>
+                            </form>
+                            {% else %}
+                            <!-- Mark Complete Form -->
+                            <form method="POST" action="{{ url_for('student.complete_learning_step', item_id=step.id) }}"
+                                  class="d-flex align-items-center gap-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                                <input type="hidden" name="job_id" value="{{ job_id }}">
+
+                                {% if step.item_type == 'skill' %}
+                                <select name="proficiency" class="form-select form-select-sm"
+                                        title="Select your achieved proficiency level"
+                                        style="font-size:12px; border-radius:8px; width:135px;">
+                                    <option value="1">Beginner (1)</option>
+                                    <option value="2">Beginner+ (2)</option>
+                                    <option value="3" selected>Intermediate (3)</option>
+                                    <option value="4">Advanced (4)</option>
+                                    <option value="5">Expert (5)</option>
+                                </select>
+                                {% endif %}
+
+                                <button type="submit" class="btn btn-success btn-sm text-nowrap fw-semibold" style="font-size:12px; border-radius:8px;">
+                                    <i class="bi bi-check2 me-1"></i>Mark Complete
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

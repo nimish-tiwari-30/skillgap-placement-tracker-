@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">My Dashboard</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Welcome back, <strong>{{ student.full_name.split()[0] }}</strong>! Here's your skill progress overview.
+            </p>
+        </div>
+        <a href="{{ url_for('student.profile') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-pencil-square me-1"></i>Edit Profile
+        </a>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon primary"><i class="bi bi-tags"></i></div>
+                <div>
+                    <div class="stat-value">{{ skill_count }}</div>
+                    <div class="stat-label">Skills Recorded</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon success"><i class="bi bi-award"></i></div>
+                <div>
+                    <div class="stat-value">{{ student.certifications | length }}</div>
+                    <div class="stat-label">Certifications</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon warning"><i class="bi bi-folder"></i></div>
+                <div>
+                    <div class="stat-value">{{ student.projects | length }}</div>
+                    <div class="stat-label">Projects</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="stat-icon info"><i class="bi bi-person-fill-check"></i></div>
+                <div>
+                    <div class="stat-value">{{ completion.percentage }}%</div>
+                    <div class="stat-label">Profile Complete</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Completion Card -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="card h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-person-check me-2 text-primary"></i>Profile Completion</h6>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span style="font-size:13px;">Progress</span>
+                        <span class="fw-bold text-primary">{{ completion.percentage }}%</span>
+                    </div>
+                    <div class="progress mb-3" style="height:10px; border-radius:99px;">
+                        <div class="progress-bar bg-primary" role="progressbar"
+                             style="width: {{ completion.percentage }}%; border-radius:99px;"
+                             aria-valuenow="{{ completion.percentage }}" aria-valuemin="0" aria-valuemax="100">
+                        </div>
+                    </div>
+                    {% if completion.missing %}
+                    <p class="text-muted mb-2" style="font-size:12px; font-weight:600;">WHAT'S MISSING:</p>
+                    <ul class="mb-0" style="font-size:12.5px; padding-left:18px;">
+                        {% for hint in completion.missing[:5] %}
+                        <li class="text-muted mb-1">{{ hint }}</li>
+                        {% endfor %}
+                        {% if completion.missing | length > 5 %}
+                        <li class="text-muted">+{{ completion.missing | length - 5 }} more…</li>
+                        {% endif %}
+                    </ul>
+                    {% else %}
+                    <p class="text-success mb-0" style="font-size:13px;"><i class="bi bi-check-circle me-1"></i>Profile is complete!</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills by Category -->
+        <div class="col-lg-6">
+            <div class="card h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-tags me-2 text-primary"></i>My Skills</h6>
+                    {% if skills_by_cat %}
+                    {% for cat, skill_list in skills_by_cat.items() %}
+                    <div class="mb-2">
+                        <span class="text-muted" style="font-size:11px; font-weight:600; text-transform:uppercase;">{{ cat }}</span>
+                        <div class="d-flex flex-wrap gap-1 mt-1">
+                            {% for ss in skill_list %}
+                            <span class="badge rounded-pill"
+                                  style="background: var(--primary-light); color: var(--primary); font-size:11px; padding:4px 10px;">
+                                {{ ss.skill.name }}
+                                <small class="ms-1 opacity-75">· {{ ss.proficiency_level[:3] }}</small>
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-tags text-muted" style="font-size:2rem;"></i>
+                        <p class="text-muted mt-2 mb-0" style="font-size:13px;">No skills added yet.</p>
+                        <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-sm btn-primary mt-2">
+                            <i class="bi bi-plus me-1"></i>Add Skills
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 8: Target Job & Skill Gap Overview -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0" style="font-size:15px;">
+                        <i class="bi bi-crosshair text-primary me-2"></i>Target Job & Skill Gap Readiness
+                    </h6>
+                    <a href="{{ url_for('student.skill_gap') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                        <i class="bi bi-bar-chart-gaps me-1"></i>Skill Gap Center
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {% if target_job %}
+                    <div class="row align-items-center g-4">
+                        <div class="col-lg-5 border-end">
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle mb-2 px-2 py-1" style="font-size:11px;">
+                                Primary Target Role
+                            </span>
+                            <h5 class="fw-bold mb-1 text-dark" style="font-size:18px;">{{ target_job.title }}</h5>
+                            <p class="text-muted mb-2" style="font-size:13px;">
+                                <i class="bi bi-building me-1"></i><strong>{{ target_job.company_name }}</strong>
+                                <span class="mx-2">&bull;</span>
+                                <i class="bi bi-diagram-3 me-1"></i>{{ target_job.job_role.title }}
+                            </p>
+                            <a href="{{ url_for('student.skill_gap', job_id=target_job.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-calculator me-1"></i>View Full Skill Gap Analysis
+                            </a>
+                        </div>
+
+                        <div class="col-lg-7">
+                            {% if latest_details %}
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span style="font-size:13px;">Skill Match Coverage</span>
+                                <span class="fw-bold text-primary" style="font-size:15px;">
+                                    {{ "%.1f"|format(latest_details.coverage_pct) }}%
+                                </span>
+                            </div>
+                            <div class="progress mb-3" style="height:10px; border-radius:99px;">
+                                <div class="progress-bar {% if latest_details.coverage_pct >= 75 %}bg-success{% elif latest_details.coverage_pct >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                                     role="progressbar"
+                                     style="width: {{ latest_details.coverage_pct }}%; border-radius:99px;"
+                                     aria-valuenow="{{ latest_details.coverage_pct }}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11.5px;">
+                                    <i class="bi bi-check-circle me-1"></i>{{ latest_details.matched_count }} Matched Skills
+                                </span>
+                                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size:11.5px;">
+                                    <i class="bi bi-x-circle me-1"></i>{{ latest_details.missing_count }} Missing Skills
+                                </span>
+                                <span class="badge bg-light text-dark border px-2 py-1" style="font-size:11.5px;">
+                                    Weighted: {{ "%.1f"|format(latest_details.weighted_pct) }}%
+                                </span>
+                                <span class="text-muted ms-auto" style="font-size:11px;">
+                                    Updated: {{ latest_details.analyzed_at }}
+                                </span>
+                            </div>
+                            {% else %}
+                            <div class="text-center py-2">
+                                <p class="text-muted mb-2" style="font-size:13px;">
+                                    You have set this as your target job, but have not calculated your gap analysis yet.
+                                </p>
+                                <a href="{{ url_for('student.skill_gap', job_id=target_job.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-play-circle me-1"></i>Run Initial Analysis
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% elif latest_details %}
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <span class="badge bg-secondary-subtle text-secondary border mb-1">Recent Analysis</span>
+                            <h6 class="fw-bold mb-1">{{ latest_details.job_title }} ({{ latest_details.company_name }})</h6>
+                            <p class="text-muted mb-0" style="font-size:12.5px;">
+                                Match: <strong>{{ "%.1f"|format(latest_details.coverage_pct) }}%</strong> &bull;
+                                Matched: {{ latest_details.matched_count }} &bull;
+                                Missing: {{ latest_details.missing_count }}
+                            </p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('student.skill_gap', job_id=latest_details.job_id) }}" class="btn btn-sm btn-primary">
+                                View Analysis
+                            </a>
+                            <a href="{{ url_for('student.skill_gap') }}" class="btn btn-sm btn-outline-secondary">
+                                Pick Target Job
+                            </a>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-compass text-muted" style="font-size:2rem;"></i>
+                        <p class="text-muted mt-2 mb-2" style="font-size:13px;">
+                            No target job selected yet. Set a target job to track your skills readiness and close gaps.
+                        </p>
+                        <a href="{{ url_for('student.skill_gap') }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-crosshair me-1"></i>Select a Target Job
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 9: Closest Matches by Skill Similarity (Top 3 by Overall Match) -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="fw-bold mb-0" style="font-size:15px;">
+                            <i class="bi bi-person-check text-primary me-2"></i>Closest matches by skill similarity
+                        </h6>
+                        <small class="text-muted" style="font-size:11.5px;">Top 3 opportunities ranked by TF-IDF vector similarity</small>
+                    </div>
+                    <a href="{{ url_for('student.job_matching') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                        Explore All Matches &rarr;
+                    </a>
+                </div>
+                <div class="card-body p-4">
+                    {% if top_matches %}
+                    <div class="row g-3">
+                        {% for j in top_matches %}
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100 d-flex flex-column"
+                                 style="background:var(--main-bg); border-color:var(--border-color) !important;">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:11px;">
+                                        {{ j.role_title }}
+                                    </span>
+                                    <span class="fw-bold text-primary" style="font-size:13px;">
+                                        {{ "%.1f"|format(j.overall_match_pct) }}%
+                                    </span>
+                                </div>
+                                <h6 class="fw-bold mb-1" style="font-size:14px;">
+                                    <a href="{{ url_for('student.job_match_detail', job_id=j.job_id) }}" class="text-decoration-none text-dark">
+                                        {{ j.title }}
+                                    </a>
+                                </h6>
+                                <p class="text-muted mb-2" style="font-size:12px;">{{ j.company_name }}</p>
+
+                                <div class="progress mb-2" style="height:6px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                                    <div class="progress-bar bg-primary" role="progressbar"
+                                         style="width: {{ j.overall_match_pct }}%; border-radius:99px;"
+                                         aria-valuenow="{{ j.overall_match_pct }}" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-between text-muted mt-auto pt-2 border-top" style="font-size:11.5px;">
+                                    <span>Coverage: <strong>{{ "%.1f"|format(j.coverage_pct) }}%</strong></span>
+                                    <a href="{{ url_for('student.job_match_detail', job_id=j.job_id) }}" class="text-primary text-decoration-none">
+                                        View &rarr;
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <p class="text-muted mb-0" style="font-size:13px;">
+                            Add skills to your profile to see closest matches by skill similarity.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 10: Course Recommendations / Closing Skill Gaps -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-0" style="font-size:15px;">
+                            <i class="bi bi-mortarboard text-primary me-2"></i>Recommended Learning &amp; Course Suggestions
+                        </h6>
+                        <small class="text-muted" style="font-size:11.5px;">Curated online courses to close critical skill gaps for your career path</small>
+                    </div>
+                    {% if target_job %}
+                    <a href="{{ url_for('student.recommendations', job_id=target_job.id) }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                        Explore Recommendations &rarr;
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('student.recommendations') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                        Course Recommendations &rarr;
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body p-4">
+                    {% if target_job and top_missing_skills %}
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                        <div class="text-muted" style="font-size:13px;">
+                            Top priority skills needed for <strong class="text-dark">{{ target_job.title }}</strong>:
+                        </div>
+                        <a href="{{ url_for('student.recommendations', job_id=target_job.id) }}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-book me-1"></i>Find Courses for Gaps
+                        </a>
+                    </div>
+                    <div class="row g-3">
+                        {% for s in top_missing_skills %}
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 h-100" style="background:var(--main-bg); border-color:var(--border-color) !important;">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="badge rounded-pill bg-danger-subtle text-danger border border-danger-subtle" style="font-size:11px;">
+                                        Missing Skill
+                                    </span>
+                                    {% if s.importance >= 4 %}
+                                    <span class="badge bg-danger text-white" style="font-size:10.5px;">Critical</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary text-white" style="font-size:10.5px;">Weight {{ s.importance }}</span>
+                                    {% endif %}
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark" style="font-size:14px;">{{ s.name }}</h6>
+                                <p class="text-muted mb-0" style="font-size:12px;">
+                                    Target role requirement with weight {{ s.importance }}/5.
+                                </p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% elif target_job and not top_missing_skills and latest_details %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-check-circle text-success" style="font-size:2rem;"></i>
+                        <p class="text-dark fw-bold mt-2 mb-1" style="font-size:14px;">All skills covered for your target job!</p>
+                        <p class="text-muted mb-0" style="font-size:12.5px;">You have mastered all requirements for {{ target_job.title }}.</p>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="bi bi-journal-bookmark text-muted" style="font-size:2rem;"></i>
+                        <p class="text-muted mt-2 mb-2" style="font-size:13px;">
+                            Choose a target job to see personalized course recommendations for closing missing skills.
+                        </p>
+                        <a href="{{ url_for('student.recommendations') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-mortarboard me-1"></i>Open Course Recommendations
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 11: Learning Progress & Skill Mastery -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h6 class="fw-bold mb-0" style="font-size:15px;">
+                            <i class="bi bi-compass text-primary me-2"></i>Learning Progress &amp; Skill Mastery
+                        </h6>
+                        <small class="text-muted" style="font-size:11.5px;">Real-time progress on your structured learning path and verified skill improvements</small>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('student.learning_path') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                            <i class="bi bi-signpost-split me-1"></i>Learning Path
+                        </a>
+                        <a href="{{ url_for('student.progress') }}" class="btn btn-primary btn-sm" style="font-size:12px;">
+                            <i class="bi bi-graph-up-arrow me-1"></i>Skill Progress Chart
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4 align-items-center">
+                        <!-- Left Column: Path Completion -->
+                        <div class="col-lg-5 border-end pe-lg-4">
+                            <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Target Job Learning Path</span>
+                            {% if target_job %}
+                            <h6 class="fw-bold mt-1 mb-2 text-dark">{{ target_job.title }}</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span style="font-size:13px;" class="text-muted">Path Completion</span>
+                                <span class="fw-bold text-primary" style="font-size:15px;">{{ "%.1f"|format(path_completion_pct) }}%</span>
+                            </div>
+                            <div class="progress mb-3" style="height:10px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                                <div class="progress-bar {% if path_completion_pct >= 100 %}bg-success{% elif path_completion_pct >= 50 %}bg-primary{% else %}bg-warning{% endif %}"
+                                     role="progressbar"
+                                     style="width: {{ path_completion_pct }}%; border-radius:99px;"
+                                     aria-valuenow="{{ path_completion_pct }}" aria-valuemin="0" aria-valuemax="100">
+                                </div>
+                            </div>
+                            {% if has_learning_path %}
+                            <p class="text-muted mb-3" style="font-size:12.5px;">
+                                Step-by-step milestones to close skill gaps and build career readiness.
+                            </p>
+                            <a href="{{ url_for('student.learning_path', job_id=target_job.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-check2-circle me-1"></i>Continue Learning Path &rarr;
+                            </a>
+                            {% else %}
+                            <p class="text-muted mb-3" style="font-size:12.5px;">
+                                You haven't generated your customized step-by-step path for this role yet.
+                            </p>
+                            <a href="{{ url_for('student.learning_path', job_id=target_job.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-magic me-1"></i>Generate Learning Path
+                            </a>
+                            {% endif %}
+                            {% else %}
+                            <div class="py-2">
+                                <p class="text-muted mb-3" style="font-size:13px;">
+                                    Select a target job in the Skill Gap Center to unlock your personalized learning path.
+                                </p>
+                                <a href="{{ url_for('student.skill_gap') }}" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-crosshair me-1"></i>Select Target Job
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Right Column: Top 3 Skills with Proficiency Bars -->
+                        <div class="col-lg-7 ps-lg-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Top Skill Proficiencies</span>
+                                <a href="{{ url_for('student.progress') }}" class="text-decoration-none text-primary" style="font-size:12px;">
+                                    View Timeline History &rarr;
+                                </a>
+                            </div>
+                            {% if top_student_skills %}
+                            <div class="d-flex flex-column gap-3">
+                                {% for sk in top_student_skills %}
+                                <div>
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-semibold text-dark" style="font-size:13.5px;">{{ sk.name }}</span>
+                                        <span class="badge rounded-pill {% if sk.level == 'Advanced' %}bg-success-subtle text-success border border-success-subtle{% elif sk.level == 'Intermediate' %}bg-primary-subtle text-primary border border-primary-subtle{% else %}bg-secondary-subtle text-secondary border border-secondary-subtle{% endif %}" style="font-size:11px;">
+                                            {{ sk.level }} (Level {{ 3 if sk.level == 'Advanced' else (2 if sk.level == 'Intermediate' else 1) }}/3)
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height:8px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                                        <div class="progress-bar {% if sk.pct >= 90 %}bg-success{% elif sk.pct >= 60 %}bg-primary{% else %}bg-info{% endif %}"
+                                             role="progressbar"
+                                             style="width: {{ sk.pct }}%; border-radius:99px;"
+                                             aria-valuenow="{{ sk.pct }}" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="text-center py-3">
+                                <i class="bi bi-graph-up text-muted" style="font-size:1.8rem;"></i>
+                                <p class="text-muted mt-2 mb-1" style="font-size:13px;">No skill proficiencies recorded yet.</p>
+                                <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-sm btn-outline-primary mt-1">
+                                    <i class="bi bi-plus-lg me-1"></i>Add Skills to Profile
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 12: Real Employment Status Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="fw-bold mb-0 text-dark" style="font-size:15px;">
+                    <i class="bi bi-briefcase text-primary me-2"></i>Employment &amp; Placement Status
+                </h6>
+                <small class="text-muted" style="font-size:11.5px;">Current career placement status and outcome tracking</small>
+            </div>
+            <a href="{{ url_for('student.employment') }}" class="btn btn-outline-primary btn-sm" style="font-size:12px;">
+                Manage Status &rarr;
+            </a>
+        </div>
+        <div class="card-body p-4">
+            {% if employment_outcome %}
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div style="font-size:2rem;">
+                        {% if employment_outcome.status == 'Placed' %}
+                        <i class="bi bi-check-circle-fill text-success"></i>
+                        {% elif employment_outcome.status == 'In Progress' %}
+                        <i class="bi bi-hourglass-split text-warning"></i>
+                        {% else %}
+                        <i class="bi bi-dash-circle text-danger"></i>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="badge rounded-pill {% if employment_outcome.status == 'Placed' %}bg-success-subtle text-success border border-success-subtle{% elif employment_outcome.status == 'In Progress' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}" style="font-size:12px;">
+                                {{ employment_outcome.status }}
+                            </span>
+                            {% if employment_outcome.placement_type and employment_outcome.placement_type != 'Unknown' %}
+                            <span class="badge bg-secondary-subtle text-secondary border" style="font-size:11px;">
+                                {{ employment_outcome.placement_type }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% if employment_outcome.status == 'Placed' %}
+                        <h6 class="fw-bold text-dark mb-1">{{ employment_outcome.role_title }} &bull; {{ employment_outcome.company_name }}</h6>
+                        <p class="text-muted mb-0" style="font-size:12.5px;">
+                            {% if employment_outcome.salary_package_lpa %}Package: <strong>{{ "%.2f"|format(employment_outcome.salary_package_lpa) }} LPA</strong> &bull; {% endif %}
+                            {% if employment_outcome.placement_date_formatted %}Placed on: {{ employment_outcome.placement_date_formatted }}{% endif %}
+                        </p>
+                        {% else %}
+                        <p class="text-muted mb-0" style="font-size:12.5px;">
+                            {{ employment_outcome.notes or 'Seeking career placement and interview opportunities.' }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <a href="{{ url_for('student.employment') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil-square me-1"></i>Update Outcome
+                    </a>
+                </div>
+            </div>
+            {% else %}
+            <div class="text-center py-3">
+                <i class="bi bi-briefcase text-muted" style="font-size:2rem;"></i>
+                <h6 class="fw-bold text-dark mt-2 mb-1">No Employment Outcome Recorded Yet</h6>
+                <p class="text-muted mb-3" style="font-size:13px;">
+                    Keep your placement status updated so career placement teams and analytics can track your journey.
+                </p>
+                <a href="{{ url_for('student.employment') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-plus-circle me-1"></i>Record Employment Status
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

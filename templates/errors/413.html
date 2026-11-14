@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}413 Payload Too Large{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card text-center error-page-card">
+    <div class="error-code text-warning">413</div>
+    <h1 class="error-message">File Too Large</h1>
+    <p class="error-sub">
+        The uploaded document exceeds the maximum allowable size of {{ max_mb | default(16) }}MB.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+        <a href="{{ url_for('auth.index') }}" class="btn btn-primary">
+            <i class="bi bi-speedometer2"></i> Back to dashboard
+        </a>
+        <a href="javascript:history.back()" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Previous Page
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-page-card card shadow-sm mx-auto my-5">
+    <div class="card-body py-5 text-center">
+        <div class="error-code text-warning">413</div>
+        <h1 class="error-message">File Too Large</h1>
+        <p class="error-sub">
+            The uploaded file exceeds the maximum limit of {{ max_mb | default(16) }}MB.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+            <a href="{{ url_for('auth.index') }}" class="btn btn-primary">
+                <i class="bi bi-speedometer2"></i> Back to dashboard
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Previous Page
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

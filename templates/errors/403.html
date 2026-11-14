@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}403 Forbidden{% endblock %}
+
+{% block auth_content %}
+<div class="auth-card text-center error-page-card">
+    <div class="error-code text-warning">403</div>
+    <h1 class="error-message">Access Forbidden</h1>
+    <p class="error-sub">
+        You do not have administrative or authorization clearance to view this resource.
+    </p>
+    <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+        <a href="{{ url_for('auth.index') }}" class="btn btn-primary">
+            <i class="bi bi-speedometer2"></i> Back to dashboard
+        </a>
+        <a href="javascript:history.back()" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Previous Page
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="error-page-card card shadow-sm mx-auto my-5">
+    <div class="card-body py-5 text-center">
+        <div class="error-code text-warning">403</div>
+        <h1 class="error-message">Access Forbidden</h1>
+        <p class="error-sub">
+            You do not have authorization clearance to view this resource.
+        </p>
+        <div class="d-flex flex-wrap justify-content-center gap-2 mt-4">
+            <a href="{{ url_for('auth.index') }}" class="btn btn-primary">
+                <i class="bi bi-speedometer2"></i> Back to dashboard
+            </a>
+            <a href="javascript:history.back()" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Previous Page
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

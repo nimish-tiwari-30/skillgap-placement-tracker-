@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}{{ match.title }} | Job Match Detail{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Back Button -->
+    <div class="mb-3">
+        <a href="{{ url_for('student.job_matching') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>Back to All Job Matches
+        </a>
+    </div>
+
+    <!-- Header Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:12px; font-weight:600; padding:6px 12px;">
+                            {{ match.role_title }}
+                        </span>
+                        {% if match.is_target_job %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11.5px;">
+                            <i class="bi bi-pin-angle-fill me-1"></i>Current Target Job
+                        </span>
+                        {% endif %}
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size:24px;">{{ match.title }}</h2>
+                    <div class="text-muted" style="font-size:13.5px;">
+                        <i class="bi bi-building me-1"></i><strong>{{ match.company_name }}</strong>
+                        <span class="mx-2">&bull;</span>
+                        <i class="bi bi-geo-alt me-1"></i>{{ match.location }}
+                        <span class="mx-2">&bull;</span>
+                        <i class="bi bi-clock-history me-1"></i>Min Exp: {{ match.min_experience }}
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('student.skill_gap', job_id=match.job_id) }}" class="btn btn-primary btn-sm px-3" style="border-radius:8px;">
+                        <i class="bi bi-bar-chart-gaps me-1"></i>Run Full Skill-Gap Analysis
+                    </a>
+                    {% if not match.is_target_job %}
+                    <form method="POST" action="{{ url_for('student.set_target_job', job_id=match.job_id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm px-3" style="border-radius:8px;">
+                            <i class="bi bi-pin me-1"></i>Set as Target Job
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mandatory Info Note -->
+    <div class="info-note-box shadow-sm d-flex align-items-start gap-3 mb-4" role="note">
+        <i class="bi bi-info-circle-fill text-primary fs-4 mt-1"></i>
+        <div style="font-size:13px; line-height:1.6; color:var(--text-primary);">
+            <strong>Understanding Match Metrics:</strong><br>
+            <strong>Skill Coverage</strong> = how many required skills you have.<br>
+            <strong>Overall Job Match</strong> = how similar your skill profile is to the job, weighted by importance and proficiency (TF-IDF Cosine Similarity).<br>
+            <span class="text-muted">Neither is a prediction of getting hired. Demo data.</span>
+        </div>
+    </div>
+
+    <!-- 3 Scores Row -->
+    <div class="row g-4 mb-4">
+        <!-- Overall Job Match -->
+        <div class="col-md-4">
+            <div class="stat-card h-100">
+                <div class="stat-icon primary"><i class="bi bi-bullseye"></i></div>
+                <div>
+                    <div class="stat-value text-primary">{{ "%.1f"|format(match.overall_match_pct) }}%</div>
+                    <div class="stat-label">Overall Job Match</div>
+                    <small class="text-muted" style="font-size:11px;">TF-IDF Cosine Similarity</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skill Coverage -->
+        <div class="col-md-4">
+            <div class="stat-card h-100">
+                <div class="stat-icon success"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="stat-value text-success">{{ "%.1f"|format(match.coverage_pct) }}%</div>
+                    <div class="stat-label">Skill Coverage</div>
+                    <small class="text-muted" style="font-size:11px;">{{ match.matched_count }} of {{ match.matched_count + match.missing_count }} skills possessed</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weighted Coverage -->
+        <div class="col-md-4">
+            <div class="stat-card h-100">
+                <div class="stat-icon info"><i class="bi bi-star"></i></div>
+                <div>
+                    <div class="stat-value text-info">{{ "%.1f"|format(match.weighted_pct) }}%</div>
+                    <div class="stat-label">Importance-Weighted</div>
+                    <small class="text-muted" style="font-size:11px;">Prioritizes 4★ & 5★ critical skills</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bars Row -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-4">
+            <h6 class="fw-bold mb-3" style="font-size:14px;">Match Indicators</h6>
+
+            <!-- Overall Match Bar -->
+            <div class="mb-3">
+                <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
+                    <span class="fw-semibold">Overall Job Match (Vector Similarity)</span>
+                    <strong class="text-primary">{{ "%.1f"|format(match.overall_match_pct) }}%</strong>
+                </div>
+                <div class="progress" style="height:10px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                    <div class="progress-bar bg-primary" role="progressbar"
+                         style="width: {{ match.overall_match_pct }}%; border-radius:99px;"
+                         aria-valuenow="{{ match.overall_match_pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Skill Coverage Bar -->
+            <div>
+                <div class="d-flex justify-content-between mb-1" style="font-size:13px;">
+                    <span class="fw-semibold">Skill Coverage (Direct Count Ratio)</span>
+                    <strong class="text-success">{{ "%.1f"|format(match.coverage_pct) }}%</strong>
+                </div>
+                <div class="progress" style="height:10px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ match.coverage_pct }}%; border-radius:99px;"
+                         aria-valuenow="{{ match.coverage_pct }}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Breakdown Section -->
+    <div class="row g-4 mb-4">
+        <!-- Matched Skills -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-success" style="font-size:14px;">
+                        <i class="bi bi-check-circle-fill me-2"></i>Matched Skills ({{ match.matched_count }})
+                    </h6>
+                    <span class="badge bg-success-subtle text-success">You have these</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if match.matched_skills %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for s in match.matched_skills %}
+                        <span class="badge rounded-pill d-inline-flex align-items-center gap-1"
+                              style="background:rgba(16, 185, 129, 0.12); color:#047857; font-size:12.5px; padding:6px 12px;">
+                            <i class="bi bi-check-lg"></i>
+                            <strong>{{ s.name }}</strong>
+                            {% if s.proficiency %}
+                            <small class="ms-1 opacity-75">({{ s.proficiency }})</small>
+                            {% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0" style="font-size:13px;">No overlapping skills identified between your profile and this job.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Missing Skills (Ordered by Importance) -->
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-danger" style="font-size:14px;">
+                        <i class="bi bi-x-circle-fill me-2"></i>Missing Skills ({{ match.missing_count }})
+                    </h6>
+                    <span class="badge bg-danger-subtle text-danger">Ranked by Priority</span>
+                </div>
+                <div class="card-body p-4">
+                    {% if match.missing_skills %}
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for s in match.missing_skills %}
+                        <span class="badge rounded-pill d-inline-flex align-items-center gap-1"
+                              style="background:rgba(239, 68, 68, 0.12); color:#b91c1c; font-size:12.5px; padding:6px 12px;">
+                            <i class="bi bi-x-lg"></i>
+                            <strong>{{ s.name }}</strong>
+                            <small class="ms-1 px-1 rounded bg-white text-danger border" style="font-size:10px;">
+                                Weight {{ s.importance }}/5
+                            </small>
+                        </span>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-success mb-0" style="font-size:13px;">
+                        <i class="bi bi-check-all me-1"></i>No missing skills! You possess all required technical skills for this role.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extra Skills -->
+    {% if match.extra_skills %}
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-primary" style="font-size:14px;">
+                <i class="bi bi-plus-circle-fill me-2"></i>Additional Profile Skills ({{ match.extra_count }})
+            </h6>
+        </div>
+        <div class="card-body p-4">
+            <p class="text-muted mb-2" style="font-size:12.5px;">Skills you possess that are not explicitly required by this job description:</p>
+            <div class="d-flex flex-wrap gap-2">
+                {% for s in match.extra_skills %}
+                <span class="badge rounded-pill"
+                      style="background:rgba(99, 102, 241, 0.1); color:#4f46e5; font-size:12px; padding:5px 11px;">
+                    {{ s.name }}
+                    {% if s.proficiency %}
+                    <small class="ms-1 opacity-75">· {{ s.proficiency }}</small>
+                    {% endif %}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Job Description Body -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-light py-3 border-bottom">
+            <h6 class="fw-bold mb-0" style="font-size:14px;">
+                <i class="bi bi-file-text me-2 text-primary"></i>Job Description
+            </h6>
+        </div>
+        <div class="card-body p-4">
+            <div style="font-size:13.5px; line-height:1.7; white-space:pre-line; color:var(--text-color);">
+                {{ match.description_text }}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}Job Matching{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:24px;">
+                <i class="bi bi-person-check text-primary me-2"></i>Job Matching Analysis
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Evaluate how your acquired competencies correspond to active industry postings using transparent coverage and TF-IDF vector similarity.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.skill_gap') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-bar-chart-gaps me-1"></i>Skill Gap Center
+            </a>
+            <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-tags me-1"></i>My Profile Skills
+            </a>
+        </div>
+    </div>
+
+    <!-- Mandatory Visible Transparency Info Note -->
+    <div class="info-note-box shadow-sm d-flex align-items-start gap-3 mb-4" role="note">
+        <i class="bi bi-info-circle-fill text-primary fs-4 mt-1 flex-shrink-0"></i>
+        <div style="font-size:13px; line-height:1.6; color:var(--text-primary);">
+            <strong>Understanding Match Metrics:</strong><br>
+            Skill Coverage = how many required skills you have. Overall Job Match = how similar your skill profile is to the job, weighted by importance and proficiency. Neither is a prediction of getting hired. Demo data.
+        </div>
+    </div>
+
+    <!-- Friendly State: Student has 0 skills -->
+    {% if not has_skills %}
+    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4"
+         style="border-radius:12px; background: rgba(245, 158, 11, 0.12); color:#b45309;">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+            <div>
+                <strong style="font-size:14px;">No skills added to your profile!</strong>
+                <p class="mb-0 text-muted" style="font-size:13px;">
+                    Job matching scores are calculated using your recorded skills. Add your technical skills or upload your resume to see your match ratings.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-warning btn-sm fw-bold">
+                <i class="bi bi-plus-circle me-1"></i>Add Skills
+            </a>
+            <a href="{{ url_for('student.resume_upload') }}" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Upload Resume
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Filter & Sort Bar -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('student.job_matching') }}" class="row g-2 align-items-center">
+                <!-- Search Box -->
+                <div class="col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ q }}" class="form-control border-start-0"
+                               placeholder="Search job title, company, skills..." style="font-size:13px;">
+                    </div>
+                </div>
+
+                <!-- Career Role Filter -->
+                <div class="col-sm-6 col-md-3">
+                    <select name="role_id" class="form-select form-select-sm" style="font-size:13px;">
+                        <option value="">All Career Roles</option>
+                        {% for r in roles %}
+                        <option value="{{ r.id }}" {% if active_role_id == r.id %}selected{% endif %}>
+                            {{ r.title }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Neutral Sort Dropdown -->
+                <div class="col-sm-6 col-md-3">
+                    <select name="sort_by" class="form-select form-select-sm" style="font-size:13px;">
+                        <option value="overall_match" {% if sort_by == 'overall_match' %}selected{% endif %}>
+                            Sorted by: Overall Match
+                        </option>
+                        <option value="coverage" {% if sort_by == 'coverage' %}selected{% endif %}>
+                            Sorted by: Skill Coverage
+                        </option>
+                        <option value="title" {% if sort_by == 'title' %}selected{% endif %}>
+                            Sorted by: Job Title
+                        </option>
+                    </select>
+                </div>
+
+                <!-- Buttons -->
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-grow-1" style="font-size:12.5px;">
+                        Filter
+                    </button>
+                    {% if q or active_role_id or sort_by != 'overall_match' %}
+                    <a href="{{ url_for('student.job_matching') }}" class="btn btn-outline-secondary btn-sm" title="Clear Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Jobs Listing -->
+    {% if jobs %}
+    <div class="row g-4">
+        {% for j in jobs %}
+        <div class="col-lg-6 col-xl-6">
+            <div class="card shadow-sm h-100 position-relative"
+                 style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg); transition:transform 0.15s ease, box-shadow 0.15s ease;">
+                <div class="card-body p-4 d-flex flex-column">
+
+                    <!-- Top row: Role badge & Target tag -->
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:11.5px; font-weight:600; padding:4px 10px;">
+                            {{ j.role_title }}
+                        </span>
+                        {% if j.is_target_job %}
+                        <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px;">
+                            <i class="bi bi-pin-angle-fill me-1"></i>Target Job
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Job Title & Company -->
+                    <h5 class="fw-bold mb-1" style="font-size:17px;">
+                        <a href="{{ url_for('student.job_match_detail', job_id=j.job_id) }}" class="text-decoration-none job-title-link">
+                            {{ j.title }}
+                        </a>
+                    </h5>
+                    <div class="text-muted mb-3" style="font-size:12.5px;">
+                        <i class="bi bi-building me-1"></i>{{ j.company_name }}
+                        <span class="mx-2">&bull;</span>
+                        <i class="bi bi-geo-alt me-1"></i>{{ j.location }}
+                        <span class="mx-2">&bull;</span>
+                        <i class="bi bi-briefcase me-1"></i>{{ j.min_experience }}
+                    </div>
+
+                    <!-- Two Transparent Numbers (Skill Coverage & Overall Job Match) -->
+                    <div class="job-score-box">
+                        <!-- Overall Job Match % (TF-IDF Cosine Similarity) -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="score-row-label">
+                                <i class="bi bi-bullseye text-primary me-1"></i>Overall Job Match
+                            </span>
+                            <span class="score-pct-primary">
+                                {{ "%.1f"|format(j.overall_match_pct) }}%
+                            </span>
+                        </div>
+                        <div class="progress mb-3" style="height:8px; border-radius:99px;">
+                            <div class="progress-bar {% if j.overall_match_pct >= 70 %}bg-success{% elif j.overall_match_pct >= 40 %}bg-primary{% else %}bg-warning{% endif %}"
+                                 role="progressbar"
+                                 style="width: {{ j.overall_match_pct }}%; border-radius:99px;"
+                                 aria-valuenow="{{ j.overall_match_pct }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+
+                        <!-- Skill Coverage % (Phase 8 unweighted) -->
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="score-row-label">
+                                <i class="bi bi-check2-circle text-success me-1"></i>Skill Coverage
+                            </span>
+                            <span class="score-pct-success">
+                                {{ "%.1f"|format(j.coverage_pct) }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height:8px; border-radius:99px;">
+                            <div class="progress-bar {% if j.coverage_pct >= 70 %}bg-success{% elif j.coverage_pct >= 40 %}bg-info{% else %}bg-warning{% endif %}"
+                                 role="progressbar"
+                                 style="width: {{ j.coverage_pct }}%; border-radius:99px;"
+                                 aria-valuenow="{{ j.coverage_pct }}" aria-valuemin="0" aria-valuemax="100">
+                            </div>
+                        </div>
+
+                        <div class="score-meta-counts">
+                            <span>{{ j.matched_count }} of {{ j.total_required }} skills matched</span>
+                            <span>{{ j.missing_count }} missing</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Actions -->
+                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                        <a href="{{ url_for('student.job_match_detail', job_id=j.job_id) }}" class="btn btn-outline-primary btn-sm px-3" style="font-size:12.5px; border-radius:8px;">
+                            View Match Breakdown &rarr;
+                        </a>
+                        <a href="{{ url_for('student.skill_gap', job_id=j.job_id) }}" class="text-muted text-decoration-none" style="font-size:12px;">
+                            <i class="bi bi-bar-chart-gaps me-1"></i>Skill Gap
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- Friendly State: No jobs found -->
+    <div class="card shadow-sm p-5 text-center my-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <i class="bi bi-search text-muted" style="font-size:3rem;"></i>
+        <h5 class="fw-bold mt-3">No Active Jobs Found</h5>
+        <p class="text-muted mb-3" style="font-size:13.5px;">
+            No job opportunities match your current filter criteria. Try clearing search or selecting a different career role.
+        </p>
+        <div>
+            <a href="{{ url_for('student.job_matching') }}" class="btn btn-outline-primary btn-sm">
+                Clear Filters
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

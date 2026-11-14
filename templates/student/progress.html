@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:24px;">
+                <i class="bi bi-graph-up text-primary me-2"></i>Skill Progress &amp; Growth Tracking
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13.5px;">
+                Monitor your proficiency improvements and mastery over time across all technical domains.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.learning_path') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-map me-1"></i>Learning Path
+            </a>
+            <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-tags me-1"></i>Manage Skills
+            </a>
+        </div>
+    </div>
+
+    {% if not history_data.has_data %}
+    <!-- Friendly State: No Progress History Yet -->
+    <div class="card shadow-sm text-center py-5" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body">
+            <div class="mb-3">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle"
+                     style="width:72px; height:72px; background:rgba(99, 102, 241, 0.1); color:var(--primary); font-size:32px;">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+            </div>
+            <h4 class="fw-bold mb-2">No Skill Progress Recorded Yet</h4>
+            <p class="text-muted mx-auto mb-4" style="max-width:520px; font-size:14px;">
+                As you mark milestones complete in your Learning Path or update your skill levels in your profile,
+                your historical skill growth and proficiency progression will be automatically graphed here.
+            </p>
+            <div class="d-flex justify-content-center gap-2">
+                <a href="{{ url_for('student.learning_path') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-map me-1"></i>Go to Learning Path
+                </a>
+                <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-plus-circle me-1"></i>Add Skills Manually
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+
+    <!-- Chart Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold mb-0" style="font-size:15px;">
+                    <i class="bi bi-bezier2 text-primary me-2"></i>Proficiency Trajectory Over Time
+                </h6>
+                <small class="text-muted" style="font-size:11.5px;">Level progression: Beginner (1) &rarr; Intermediate (2) &rarr; Advanced (3)</small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-muted" style="font-size:12px;">Filter skills:</span>
+                <select id="skillChartSelect" class="form-select form-select-sm" style="max-width:220px; font-size:12px;" onchange="updateChartVisibility()">
+                    <option value="all">Show All Active (Top 5)</option>
+                    {% for sk in history_data.unique_skills %}
+                    <option value="{{ sk.id }}">{{ sk.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <div style="position: relative; height: 320px; width: 100%;">
+                <canvas id="progressLineChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent History Table Card -->
+    <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom">
+            <h6 class="fw-bold mb-0" style="font-size:15px;">
+                <i class="bi bi-clock-history text-primary me-2"></i>Recent Proficiency Activity Log
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="padding-left:20px;">Recorded Date</th>
+                            <th>Technical Skill</th>
+                            <th>Previous Level</th>
+                            <th>Updated Proficiency</th>
+                            <th>Progression Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in history_data.history_table %}
+                        <tr>
+                            <td style="padding-left:20px;" class="text-muted">{{ row.date }}</td>
+                            <td><strong class="text-dark">{{ row.skill_name }}</strong></td>
+                            <td>
+                                {% if row.old_proficiency and row.old_proficiency != 'None' %}
+                                <span class="badge bg-light text-muted border">{{ row.old_proficiency }}</span>
+                                {% else %}
+                                <span class="text-muted opacity-75">Initial Acquisition</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.new_proficiency == 'Advanced' %}
+                                <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                    {{ row.new_proficiency }}
+                                </span>
+                                {% elif row.new_proficiency == 'Intermediate' %}
+                                <span class="badge bg-info-subtle text-info border border-info-subtle">
+                                    {{ row.new_proficiency }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-light text-dark border">
+                                    {{ row.new_proficiency }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                    <i class="bi bi-arrow-up-right me-1"></i>Recorded
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart.js initialization script -->
+    <script>
+    let progressChart = null;
+    const allDatasets = {{ history_data.datasets | tojson }};
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('progressLineChart').getContext('2d');
+
+        // Initially show top 3-5 datasets
+        const initialDatasets = allDatasets.slice(0, 5);
+
+        progressChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                datasets: initialDatasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'nearest',
+                    intersect: false
+                },
+                scales: {
+                    y: {
+                        min: 0.5,
+                        max: 3.5,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                if (value === 1) return 'Beginner';
+                                if (value === 2) return 'Intermediate';
+                                if (value === 3) return 'Advanced';
+                                return '';
+                            }
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    x: {
+                        type: 'category',
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const raw = context.raw;
+                                const prof = (raw && raw.prof_label) ? raw.prof_label : context.parsed.y;
+                                return `${context.dataset.label}: ${prof}`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+
+    function updateChartVisibility() {
+        if (!progressChart) return;
+        const select = document.getElementById('skillChartSelect');
+        const selectedVal = select.value;
+
+        if (selectedVal === 'all') {
+            progressChart.data.datasets = allDatasets.slice(0, 5);
+        } else {
+            const filtered = allDatasets.filter(d => String(d.skill_id) === String(selectedVal));
+            progressChart.data.datasets = filtered;
+        }
+        progressChart.update();
+    }
+    </script>
+    {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Review Skills: {{ job.title }}{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('admin.jobs') }}" class="text-decoration-none text-muted" style="font-size:13px;">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Jobs
+                </a>
+            </div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">Review Required Skills: {{ job.title }}</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Company: <strong class="text-dark">{{ job.company_name }}</strong> &bull;
+                Role: <span class="badge rounded-pill bg-light text-dark border">{{ job.job_role.title }}</span>
+            </p>
+        </div>
+        <a href="{{ url_for('admin.edit_job', job_id=job.id) }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pencil me-1"></i>Edit Job Text
+        </a>
+    </div>
+
+    <!-- Importance Scale Documentation Alert -->
+    <!--
+      Phase 8 Comment:
+      The importance_weight (1 to 5) configured below directly feeds into Phase 8's
+      weighted skill gap & match percentage calculation:
+      Weighted Match % = (Sum of weights of matched skills) / (Sum of weights of all required skills) * 100
+    -->
+    <div class="alert alert-info d-flex align-items-start gap-3 mb-4" style="border-radius:12px; font-size:13px;">
+        <i class="bi bi-info-circle-fill fs-5 mt-1 text-primary"></i>
+        <div>
+            <strong>Importance Weighting Scale:</strong>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <span class="badge bg-secondary-subtle text-secondary border">1 — Nice-to-have</span>
+                <span class="badge bg-info-subtle text-info-emphasis border">2 — Desirable</span>
+                <span class="badge bg-primary-subtle text-primary border">3 — Required (Default)</span>
+                <span class="badge bg-warning-subtle text-warning-emphasis border">4 — Highly Important</span>
+                <span class="badge bg-danger-subtle text-danger border">5 — Critical</span>
+            </div>
+            <small class="text-muted d-block mt-2">
+                * Note: In Phase 8, these importance weights will determine each skill's weighted contribution towards student match score %.
+            </small>
+        </div>
+    </div>
+
+    <!-- Review Form -->
+    <form method="POST" action="{{ url_for('admin.job_skills_review', job_id=job.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Extracted Skills Card -->
+        <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; overflow:hidden;">
+            <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                <div class="fw-bold" style="font-size:14px;">
+                    <i class="bi bi-stars text-warning me-1"></i>Detected Skills from Job Description
+                </div>
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" id="selectAllCheckbox" checked>
+                    <label class="form-check-label text-muted" for="selectAllCheckbox" style="font-size:12px;">Select All</label>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                        <tr>
+                            <th style="width:48px; text-align:center;">Select</th>
+                            <th style="font-size:12px; padding:12px 16px;">Skill Name</th>
+                            <th style="font-size:12px; padding:12px 16px;">Category</th>
+                            <th style="font-size:12px; padding:12px 16px; text-align:center;">Occurrences</th>
+                            <th style="font-size:12px; padding:12px 16px; width:250px;">Importance Level</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% if review_items %}
+                        {% for item in review_items %}
+                        <tr id="skill-row-{{ item.skill_id }}">
+                            <td style="text-align:center;">
+                                <input class="form-check-input skill-checkbox" type="checkbox"
+                                       name="skill_ids" value="{{ item.skill_id }}"
+                                       id="chk-{{ item.skill_id }}" checked>
+                            </td>
+                            <td style="padding:12px 16px;">
+                                <label for="chk-{{ item.skill_id }}" class="fw-semibold text-dark mb-0 cursor-pointer">
+                                    {{ item.name }}
+                                </label>
+                                {% if item.is_existing %}
+                                <span class="badge bg-success-subtle text-success border border-success-subtle ms-2" style="font-size:10px;">Already Saved</span>
+                                {% endif %}
+                            </td>
+                            <td style="padding:12px 16px;">
+                                <span class="badge rounded-pill" style="background:rgba(99, 102, 241, 0.12); color:#4f46e5; font-size:11px;">
+                                    {{ item.category }}
+                                </span>
+                            </td>
+                            <td style="text-align:center; padding:12px 16px; font-size:12px; color:var(--text-muted);">
+                                {{ item.count }} in text
+                            </td>
+                            <td style="padding:12px 16px;">
+                                <select class="form-select form-select-sm" name="importance_{{ item.skill_id }}" style="font-size:12px;">
+                                    {% for val, label in importance_choices %}
+                                    <option value="{{ val }}" {% if item.importance == val %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="bi bi-exclamation-triangle fs-3 text-warning d-block mb-1"></i>
+                                No skills were automatically detected from the job description text.
+                                <br>You can manually select required skills below.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Add Missing Skill Manually Card -->
+        <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+            <div class="card-header bg-light py-3">
+                <div class="fw-bold" style="font-size:14px;">
+                    <i class="bi bi-plus-circle me-1 text-primary"></i>Manually Add Skill from Catalog (If Missed by Extractor)
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-7">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Choose Skill</label>
+                        <select class="form-select" name="manual_skill_id" id="manual-skill-select">
+                            <option value="">-- Select a skill to add manually --</option>
+                            {% for s in master_skills %}
+                            <option value="{{ s.id }}">{{ s.name }} ({{ s.category or 'General' }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Importance</label>
+                        <select class="form-select" name="manual_importance" id="manual-importance-select">
+                            {% for val, label in importance_choices %}
+                            <option value="{{ val }}" {% if val == 3 %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <a href="{{ url_for('admin.jobs') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-x-circle me-1"></i>Discard & Return to Jobs
+            </a>
+            <button type="submit" class="btn btn-primary px-4" id="save-job-skills-btn">
+                <i class="bi bi-check2-circle me-1"></i>Confirm & Save Required Skills
+            </button>
+        </div>
+    </form>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAll = document.getElementById('selectAllCheckbox');
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.skill-checkbox');
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+        });
+    }
+});
+</script>
+{% endblock %}

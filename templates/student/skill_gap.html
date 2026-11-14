@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% block title %}Skill Gap Analysis{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:24px;">
+                <i class="bi bi-bar-chart-gaps text-primary me-2"></i>Skill Gap Analysis
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Evaluate your technical profile against real job postings to identify matched competencies, critical gaps, and weighted readiness.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.jobs') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-briefcase me-1"></i>Browse All Jobs
+            </a>
+            <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-tags me-1"></i>Manage My Skills
+            </a>
+        </div>
+    </div>
+
+    <!-- Friendly State: Student has 0 skills -->
+    {% if not has_skills %}
+    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4"
+         style="border-radius:12px; background: rgba(245, 158, 11, 0.12); color:#b45309;">
+        <div class="d-flex align-items-center gap-3">
+            <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+            <div>
+                <strong style="font-size:14px;">No skills recorded in your profile yet!</strong>
+                <p class="mb-0 text-muted" style="font-size:13px;">
+                    Your profile does not contain any skills. Add skills manually or upload your resume to auto-extract skills before running gap analysis.
+                </p>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('student.profile', tab='skills') }}" class="btn btn-warning btn-sm fw-bold">
+                <i class="bi bi-plus-circle me-1"></i>Add Skills
+            </a>
+            <a href="{{ url_for('student.resume_upload') }}" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-file-earmark-arrow-up me-1"></i>Upload Resume
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Job Selection Bar -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('student.skill_gap') }}" class="row g-3 align-items-end">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                <div class="col-md-7 col-lg-8">
+                    <label for="jobSelect" class="form-label fw-bold mb-1" style="font-size:13px;">
+                        Select Target Job Description:
+                    </label>
+                    <select class="form-select" id="jobSelect" name="job_id" required style="font-size:13.5px; border-radius:10px;">
+                        <option value="" disabled {% if not job_id %}selected{% endif %}>-- Choose an active job posting --</option>
+                        {% for job in jobs %}
+                        <option value="{{ job.id }}" {% if selected_job and selected_job.id == job.id %}selected{% endif %}>
+                            {{ job.title }} &mdash; {{ job.company_name }} ({{ job.job_role.title }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-5 col-lg-4 d-flex align-items-center gap-2">
+                    <div class="form-check me-2" style="font-size:12.5px;">
+                        <input class="form-check-input" type="checkbox" name="set_target" value="1" id="setTargetCheck"
+                               {% if selected_job and student.target_job_id == selected_job.id %}checked disabled{% endif %}>
+                        <label class="form-check-label text-muted" for="setTargetCheck">
+                            Set as primary Target Job
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-primary flex-grow-1" style="font-size:13.5px; border-radius:10px; padding:8px 16px;">
+                        <i class="bi bi-calculator me-1"></i>Analyze
+                    </button>
+                </div>
+            </form>
+
+            {% if selected_job %}
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 pt-3 mt-3 border-top" style="font-size:12.5px;">
+                <div class="text-muted">
+                    Selected Job: <strong class="text-dark">{{ selected_job.title }}</strong> at <strong class="text-dark">{{ selected_job.company_name }}</strong>
+                    <span class="badge bg-light text-dark border ms-2">{{ selected_job.job_role.title }}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    {% if student.target_job_id == selected_job.id %}
+                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                        <i class="bi bi-pin-angle-fill me-1"></i>Current Target Job
+                    </span>
+                    {% else %}
+                    <form method="POST" action="{{ url_for('student.set_target_job', job_id=selected_job.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2" style="font-size:12px;">
+                            <i class="bi bi-pin me-1"></i>Make Target Job
+                        </button>
+                    </form>
+                    {% endif %}
+                    <a href="{{ url_for('student.job_detail', job_id=selected_job.id) }}" class="text-decoration-none ms-2">
+                        View Details <i class="bi bi-box-arrow-up-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- MAIN RESULT VIEW -->
+    {% if details %}
+
+    <!-- Target Benchmark Meta Banner -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 px-1">
+        <div>
+            <span class="text-muted" style="font-size:12.5px;">
+                Snapshot calculated on: <strong class="text-dark">{{ details.analyzed_at }}</strong>
+            </span>
+        </div>
+        <div class="d-flex gap-2">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1" style="font-size:12px;">
+                Required Skills: {{ details.matched_count + details.missing_count }}
+            </span>
+            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-3 py-1" style="font-size:12px;">
+                Your Skills: {{ details.matched_count + details.extra_count }}
+            </span>
+        </div>
+    </div>
+
+    <!-- 5 Summary Cards Row -->
+    <div class="row g-3 mb-3">
+        <!-- 1. Coverage % -->
+        <div class="col-sm-6 col-lg">
+            <div class="stat-card h-100">
+                <div class="stat-icon primary"><i class="bi bi-pie-chart"></i></div>
+                <div>
+                    <div class="stat-value text-primary">{{ "%.1f"|format(details.coverage_pct) }}%</div>
+                    <div class="stat-label">Coverage Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Weighted % -->
+        <div class="col-sm-6 col-lg">
+            <div class="stat-card h-100">
+                <div class="stat-icon success"><i class="bi bi-star"></i></div>
+                <div>
+                    <div class="stat-value text-success">{{ "%.1f"|format(details.weighted_pct) }}%</div>
+                    <div class="stat-label">Weighted Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Matched Skills -->
+        <div class="col-sm-6 col-lg">
+            <div class="stat-card h-100">
+                <div class="stat-icon info"><i class="bi bi-check2-circle"></i></div>
+                <div>
+                    <div class="stat-value text-info">{{ details.matched_count }}</div>
+                    <div class="stat-label">Matched Skills</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Missing Skills -->
+        <div class="col-sm-6 col-lg">
+            <div class="stat-card h-100">
+                <div class="stat-icon danger"><i class="bi bi-x-circle"></i></div>
+                <div>
+                    <div class="stat-value text-danger">{{ details.missing_count }}</div>
+                    <div class="stat-label">Missing Skills</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Extra Skills -->
+        <div class="col-sm-6 col-lg">
+            <div class="stat-card h-100">
+                <div class="stat-icon warning"><i class="bi bi-plus-slash-minus"></i></div>
+                <div>
+                    <div class="stat-value text-warning">{{ details.extra_count }}</div>
+                    <div class="stat-label">Extra Skills</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- One-line explanation under cards -->
+    <div class="card mb-4" style="border:1px solid var(--primary-border); border-radius:10px; background:var(--primary-bg);">
+        <div class="card-body py-2 px-3">
+            <div class="d-flex align-items-center gap-2" style="font-size:12.5px; color:var(--text-primary);">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <div>
+                    <strong>Score Explanation:</strong>
+                    <em>Coverage %</em> is the raw percentage of required skills you possess ({{ details.matched_count }}/{{ details.matched_count + details.missing_count }}), whereas
+                    <em>Weighted %</em> prioritizes critical skills based on employer importance weights (1 to 5).
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Progress Bar Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold" style="font-size:14px;">
+                    <i class="bi bi-speedometer2 text-primary me-2"></i>Job Readiness Progress
+                </span>
+                <span class="fw-bold" style="font-size:14px;">
+                    {{ "%.1f"|format(details.coverage_pct) }}% ({{ details.matched_count }} of {{ details.matched_count + details.missing_count }} required skills)
+                </span>
+            </div>
+            <div class="progress mb-2" style="height:14px; border-radius:99px; background:rgba(0,0,0,0.06);">
+                <div class="progress-bar {% if details.coverage_pct >= 75 %}bg-success{% elif details.coverage_pct >= 50 %}bg-primary{% elif details.coverage_pct >= 30 %}bg-warning{% else %}bg-danger{% endif %} progress-bar-striped progress-bar-animated"
+                     role="progressbar"
+                     style="width: {{ details.coverage_pct }}%; border-radius:99px;"
+                     aria-valuenow="{{ details.coverage_pct }}" aria-valuemin="0" aria-valuemax="100">
+                </div>
+            </div>
+            <div class="d-flex justify-content-between text-muted" style="font-size:11px;">
+                <span>0% Beginner</span>
+                <span>50% Competitive</span>
+                <span>100% Fully Qualified</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Visual Charts Row (Chart.js) -->
+    <div class="row g-4 mb-4">
+        <!-- Doughnut Chart: Matched vs Missing -->
+        <div class="col-lg-5">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom">
+                    <h6 class="fw-bold mb-0" style="font-size:14px;">
+                        <i class="bi bi-pie-chart-fill text-primary me-2"></i>Skill Breakdown (Matched vs Missing)
+                    </h6>
+                </div>
+                <div class="card-body d-flex flex-column align-items-center justify-content-center p-4">
+                    {% if details.matched_count == 0 and details.missing_count == 0 %}
+                    <p class="text-muted text-center my-4" style="font-size:13px;">No required skills data to plot.</p>
+                    {% else %}
+                    <div style="position:relative; width:220px; height:220px;">
+                        <canvas id="gapDoughnutChart"></canvas>
+                    </div>
+                    <div class="d-flex justify-content-center gap-4 mt-3 pt-2 border-top w-100 text-center" style="font-size:12px;">
+                        <div>
+                            <span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#10b981;"></span>
+                            <span class="text-muted">Matched:</span> <strong>{{ details.matched_count }}</strong>
+                        </div>
+                        <div>
+                            <span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#ef4444;"></span>
+                            <span class="text-muted">Missing:</span> <strong>{{ details.missing_count }}</strong>
+                        </div>
+                        <div>
+                            <span class="d-inline-block rounded-circle me-1" style="width:10px; height:10px; background:#6366f1;"></span>
+                            <span class="text-muted">Extra:</span> <strong>{{ details.extra_count }}</strong>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bar Chart: Required Importance vs Student Proficiency for Matched Skills -->
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0" style="font-size:14px;">
+                        <i class="bi bi-bar-chart-fill text-primary me-2"></i>Competency Comparison (Matched Skills)
+                    </h6>
+                    <small class="text-muted" style="font-size:11px;">Scale: 1 (Basic) &rarr; 5 (Expert)</small>
+                </div>
+                <div class="card-body p-4">
+                    {% if details.matched_skills %}
+                    <div style="position:relative; height:240px; width:100%;">
+                        <canvas id="competencyBarChart"></canvas>
+                    </div>
+                    <p class="text-muted text-center mt-2 mb-0" style="font-size:11.5px;">
+                        Compares required job importance vs your current proficiency level for skills you possess.
+                    </p>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-bar-chart text-muted" style="font-size:2.5rem;"></i>
+                        <p class="text-muted mt-2 mb-0" style="font-size:13px;">
+                            No matched skills yet to compare competency levels.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Missing Skills Priority Section (Ordered by Importance) -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-light py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-danger" style="font-size:14px;">
+                <i class="bi bi-exclamation-octagon-fill me-2"></i>Missing Skills Ranked by Priority
+            </h6>
+            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size:11.5px;">
+                {{ details.missing_count }} Skill Gap(s) Identified
+            </span>
+        </div>
+        <div class="card-body p-4">
+            {% if details.missing_skills %}
+            <p class="text-muted mb-3" style="font-size:13px;">
+                Focus your learning on these high-priority missing skills. Closing <strong>Must-Have</strong> gaps will rapidly increase your match score!
+            </p>
+            <div class="row g-3">
+                {% for skill in details.missing_skills %}
+                <div class="col-md-6 col-xl-4">
+                    <div class="p-3 border rounded-3 h-100" style="background:var(--main-bg); border-color:var(--border-color) !important;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="fw-bold" style="font-size:14px; color:var(--text-primary);">{{ skill.name }}</span>
+                            {% if skill.importance == 5 %}
+                            <span class="badge bg-danger text-white" style="font-size:10px;">Must-Have</span>
+                            {% elif skill.importance == 4 %}
+                            <span class="badge bg-warning text-dark" style="font-size:10px;">Critical</span>
+                            {% elif skill.importance == 3 %}
+                            <span class="badge bg-info text-dark" style="font-size:10px;">Important</span>
+                            {% else %}
+                            <span class="badge bg-secondary text-white" style="font-size:10px;">Nice-to-Have</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center text-muted" style="font-size:12px;">
+                            <span>Category: {{ skill.category }}</span>
+                            <span>Weight: <strong>{{ skill.importance }}/5</strong></span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-check-circle-fill text-success" style="font-size:2.5rem;"></i>
+                <h6 class="fw-bold mt-2 text-success">Zero Missing Skills!</h6>
+                <p class="text-muted mb-0" style="font-size:13px;">You have acquired all the core skills required for this job posting.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Complete Comparison Table -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0" style="font-size:14px;">
+                <i class="bi bi-table text-primary me-2"></i>Complete Skill Comparison Matrix
+            </h6>
+            <span class="text-muted" style="font-size:12px;">All Required & Extra Skills</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:28%;">Skill Name</th>
+                        <th style="width:20%;">Category</th>
+                        <th style="width:20%;">Student Has</th>
+                        <th style="width:18%;">Job Importance</th>
+                        <th style="width:14%;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in details.comparison_table %}
+                    <tr>
+                        <td>
+                            <strong class="text-dark">{{ row.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ row.category }}</span>
+                        </td>
+                        <td>
+                            {% if row.student_has %}
+                            <span class="text-success fw-bold">
+                                <i class="bi bi-check-circle-fill me-1"></i>Yes
+                            </span>
+                            {% if row.proficiency %}
+                            <span class="badge rounded-pill bg-light text-dark border ms-1" style="font-size:10.5px;">
+                                {{ row.proficiency }}
+                            </span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-danger">
+                                <i class="bi bi-x-circle-fill me-1"></i>No
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.required %}
+                            <div class="d-flex align-items-center gap-1">
+                                {% for i in range(1, 6) %}
+                                <i class="bi bi-star-fill {% if i <= row.importance %}text-warning{% else %}text-muted opacity-25{% endif %}" style="font-size:11px;"></i>
+                                {% endfor %}
+                                <span class="ms-1 fw-bold text-dark" style="font-size:11.5px;">({{ row.importance }})</span>
+                            </div>
+                            {% else %}
+                            <span class="text-muted fst-italic" style="font-size:12px;">Not required</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.status == 'Matched' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px;">
+                                <i class="bi bi-check-lg me-1"></i>Matched
+                            </span>
+                            {% elif row.status == 'Missing' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1" style="font-size:11px;">
+                                <i class="bi bi-x-lg me-1"></i>Missing
+                            </span>
+                            {% elif row.status == 'Extra' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1" style="font-size:11px;">
+                                <i class="bi bi-plus-lg me-1"></i>Extra Skill
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Analysis History for this Job -->
+    {% if history %}
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0" style="font-size:14px;">
+                <i class="bi bi-clock-history text-primary me-2"></i>Analysis History for this Job
+            </h6>
+            <span class="text-muted" style="font-size:12px;">Track your skill progression over time</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" style="font-size:12.5px;">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Coverage %</th>
+                        <th>Weighted %</th>
+                        <th>Matched Skills</th>
+                        <th>Missing Skills</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in history %}
+                    <tr {% if h.id == details.analysis_id %}class="table-active"{% endif %}>
+                        <td>
+                            <i class="bi bi-calendar3 me-1 text-muted"></i>
+                            {{ h.analyzed_at.strftime('%d %b %Y, %I:%M %p') }}
+                            {% if h.id == details.analysis_id %}
+                            <span class="badge bg-primary ms-1" style="font-size:10px;">Latest</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <strong class="text-primary">{{ "%.1f"|format(h.unweighted_coverage_pct or 0.0) }}%</strong>
+                        </td>
+                        <td>
+                            <strong class="text-success">{{ "%.1f"|format(h.weighted_coverage_pct or 0.0) }}%</strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-success-subtle text-success">
+                                {{ h.gap_skills | selectattr('status', 'equalto', 'Matched') | list | length }} matched
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-danger-subtle text-danger">
+                                {{ h.gap_skills | selectattr('status', 'equalto', 'Missing') | list | length }} missing
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% elif selected_job and details is none %}
+    <!-- Friendly state: Selected job has no previous analysis, prompt to click Analyze -->
+    <div class="card shadow-sm p-5 text-center my-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <i class="bi bi-calculator text-primary" style="font-size:3rem;"></i>
+        <h4 class="fw-bold mt-3">Ready to Analyze "{{ selected_job.title }}"</h4>
+        <p class="text-muted mb-4" style="max-width:550px; margin:0 auto; font-size:14px;">
+            Click the <strong>Analyze</strong> button above to evaluate your skills against the {{ selected_job.job_skills | length }} required skills for this role.
+        </p>
+        <form method="POST" action="{{ url_for('student.skill_gap') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+            <input type="hidden" name="job_id" value="{{ selected_job.id }}">
+            <button type="submit" class="btn btn-primary btn-lg px-4" style="font-size:15px; border-radius:10px;">
+                <i class="bi bi-play-fill me-1"></i>Run Skill Gap Analysis Now
+            </button>
+        </form>
+    </div>
+
+    {% elif not selected_job %}
+    <!-- Friendly state: No job selected -->
+    <div class="card shadow-sm p-5 text-center my-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <i class="bi bi-compass text-muted" style="font-size:3.5rem;"></i>
+        <h4 class="fw-bold mt-3">Select a Target Job to Begin</h4>
+        <p class="text-muted mb-4" style="max-width:550px; margin:0 auto; font-size:14px;">
+            Choose an opportunity from the dropdown above to discover your personalized match percentage, critical missing skills, and competency comparison.
+        </p>
+        <div>
+            <a href="{{ url_for('student.jobs') }}" class="btn btn-outline-primary px-4" style="font-size:14px; border-radius:10px;">
+                <i class="bi bi-search me-1"></i>Browse Available Job Descriptions
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if details %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // ── 1. Doughnut Chart: Matched vs Missing ──
+    const doughnutCtx = document.getElementById('gapDoughnutChart');
+    if (doughnutCtx) {
+        new Chart(doughnutCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Matched Skills', 'Missing Skills'],
+                datasets: [{
+                    data: [{{ details.matched_count }}, {{ details.missing_count }}],
+                    backgroundColor: ['#10b981', '#ef4444'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const total = {{ details.matched_count + details.missing_count }};
+                                const val = context.raw || 0;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : 0;
+                                return ` ${context.label}: ${val} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+    }
+
+    // ── 2. Bar Chart: Required Importance vs Student Proficiency ──
+    const barCtx = document.getElementById('competencyBarChart');
+    if (barCtx) {
+        const labels = {{ details.chart_data.bar.labels | tojson }};
+        const requiredImportance = {{ details.chart_data.bar.required_importance | tojson }};
+        const studentProficiency = {{ details.chart_data.bar.student_proficiency | tojson }};
+        const profLabels = {{ details.chart_data.bar.proficiency_labels | tojson }};
+
+        new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Job Importance Weight',
+                        data: requiredImportance,
+                        backgroundColor: 'rgba(99, 102, 241, 0.85)',
+                        borderColor: '#6366f1',
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                    },
+                    {
+                        label: 'Your Proficiency',
+                        data: studentProficiency,
+                        backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                        borderColor: '#10b981',
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 12,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                if (context.datasetIndex === 1) {
+                                    return `Level: ${profLabels[context.dataIndex]}`;
+                                }
+                                return `Weight: ${context.raw}/5`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(val) {
+                                if (val === 1) return 'Basic';
+                                if (val === 3) return 'Mid';
+                                if (val === 5) return 'Expert';
+                                return val;
+                            }
+                        },
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

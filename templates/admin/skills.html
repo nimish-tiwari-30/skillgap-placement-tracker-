@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}Manage Skills{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0" style="font-size:22px;">Manage Skills</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addSkillModal" id="add-skill-modal-btn">
+            <i class="bi bi-plus me-1"></i>Add Skill
+        </button>
+    </div>
+
+    <!-- Search & Filter -->
+    <form method="GET" class="row g-2 mb-4">
+        <div class="col-md-5">
+            <input class="form-control" type="search" name="q" value="{{ q }}"
+                   placeholder="Search skill name..." id="skill-search-box">
+        </div>
+        <div class="col-md-4">
+            <select class="form-control" name="cat" id="category-filter">
+                <option value="">All Categories</option>
+                {% for c in categories %}
+                <option value="{{ c }}" {% if active_cat == c %}selected{% endif %}>{{ c }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-outline-primary w-100" id="filter-submit">
+                <i class="bi bi-search me-1"></i>Filter
+            </button>
+        </div>
+    </form>
+
+    <!-- Skills Table -->
+    <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                    <tr>
+                        <th style="font-size:12px; padding:14px 16px;">#</th>
+                        <th style="font-size:12px; padding:14px 16px;">Skill Name</th>
+                        <th style="font-size:12px; padding:14px 16px;">Category</th>
+                        <th style="font-size:12px; padding:14px 16px;">Aliases</th>
+                        <th style="font-size:12px; padding:14px 16px;">Students</th>
+                        <th style="font-size:12px; padding:14px 16px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for skill in skills %}
+                <tr id="skill-{{ skill.id }}">
+                    <td style="font-size:13px; padding:12px 16px; color:var(--text-muted);">{{ skill.id }}</td>
+                    <td style="font-size:13px; padding:12px 16px;">
+                        <strong>{{ skill.name }}</strong>
+                        {% if skill.description %}
+                        <br><small class="text-muted">{{ skill.description[:60] }}{% if skill.description | length > 60 %}…{% endif %}</small>
+                        {% endif %}
+                    </td>
+                    <td style="padding:12px 16px;">
+                        <span class="badge rounded-pill"
+                              style="background:var(--primary-light); color:var(--primary); font-size:11px;">
+                            {{ skill.category }}
+                        </span>
+                    </td>
+                    <td style="padding:12px 16px; font-size:12px;">
+                        {% for alias in skill.aliases %}
+                        <span class="badge bg-secondary me-1">{{ alias.alias_name }}</span>
+                        <form method="POST" action="{{ url_for('admin.delete_alias', alias_id=alias.id) }}"
+                              class="d-inline"
+                              onsubmit="return confirm('Remove alias {{ alias.alias_name }}?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-link p-0 text-danger" style="font-size:11px;" title="Remove alias">×</button>
+                        </form>
+                        {% endfor %}
+                        <!-- Add alias inline -->
+                        <form method="POST" action="{{ url_for('admin.add_alias', skill_id=skill.id) }}" class="d-inline-flex gap-1 ms-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="text" name="alias_name" class="form-control form-control-sm"
+                                   style="width:90px; font-size:11px;" placeholder="+ alias"
+                                   id="alias-input-{{ skill.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" style="font-size:11px;" title="Add alias">+</button>
+                        </form>
+                    </td>
+                    <td style="padding:12px 16px; font-size:13px;">
+                        {{ skill.student_skills | length }}
+                    </td>
+                    <td style="padding:12px 16px;">
+                        <!-- Edit button -->
+                        <button class="btn btn-sm btn-outline-primary me-1"
+                                data-bs-toggle="modal" data-bs-target="#editSkillModal"
+                                data-skill-id="{{ skill.id }}"
+                                data-skill-name="{{ skill.name }}"
+                                data-skill-cat="{{ skill.category }}"
+                                data-skill-desc="{{ skill.description or '' }}"
+                                id="edit-btn-{{ skill.id }}">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <!-- Delete -->
+                        <form method="POST" action="{{ url_for('admin.delete_skill', skill_id=skill.id) }}"
+                              class="d-inline"
+                              onsubmit="return confirm('Delete skill {{ skill.name }}? This cannot be undone.')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" id="del-btn-{{ skill.id }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">
+                        No skills found. <a href="{{ url_for('admin.skills') }}">Clear filters</a> or add a new skill.
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ── Add Skill Modal ──────────────────────────────────────────────────────── -->
+<div class="modal fade" id="addSkillModal" tabindex="-1" aria-labelledby="addSkillLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold" id="addSkillLabel">Add New Skill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('admin.add_skill') }}" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Skill Name *</label>
+                        <input class="form-control" type="text" name="name" placeholder="e.g. Python" required id="new-skill-name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category *</label>
+                        <select class="form-control" name="category" required id="new-skill-cat">
+                            <option value="">Select Category</option>
+                            {% for c in categories %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="2" id="new-skill-desc"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-new-skill">Save Skill</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ── Edit Skill Modal ─────────────────────────────────────────────────────── -->
+<div class="modal fade" id="editSkillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" style="border-radius:14px;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title fw-bold">Edit Skill</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" id="editSkillForm" action="" novalidate>
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Skill Name *</label>
+                        <input class="form-control" type="text" name="name" id="edit-skill-name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category *</label>
+                        <select class="form-control" name="category" id="edit-skill-cat" required>
+                            {% for c in categories %}
+                            <option value="{{ c }}">{{ c }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="2" id="edit-skill-desc"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="save-edit-skill">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+// Populate edit modal from data attributes
+const editModal = document.getElementById('editSkillModal');
+if (editModal) {
+    editModal.addEventListener('show.bs.modal', function (event) {
+        const btn       = event.relatedTarget;
+        const skillId   = btn.getAttribute('data-skill-id');
+        const skillName = btn.getAttribute('data-skill-name');
+        const skillCat  = btn.getAttribute('data-skill-cat');
+        const skillDesc = btn.getAttribute('data-skill-desc');
+
+        document.getElementById('edit-skill-name').value = skillName;
+        document.getElementById('edit-skill-desc').value = skillDesc;
+
+        const catSelect = document.getElementById('edit-skill-cat');
+        for (let opt of catSelect.options) {
+            opt.selected = (opt.value === skillCat);
+        }
+
+        document.getElementById('editSkillForm').action =
+            `/admin/skills/edit/${skillId}`;
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

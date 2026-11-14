@@ -1,0 +1,613 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Analytics Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1400px;">
+
+    <!-- Demo Data Banner -->
+    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4 py-2 px-3" role="alert" style="border-radius:10px; background-color: #fff3cd; color: #664d03;">
+        <i class="bi bi-info-circle-fill fs-5 me-2"></i>
+        <div style="font-size: 13.5px;">
+            <strong>Notice:</strong> Demo project: figures shown are computed from synthetic/demo data unless real records are entered.
+        </div>
+    </div>
+
+    <!-- Header & Action Row -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1" style="font-size:12.5px;">
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-decoration-none text-muted">Admin</a></li>
+                    <li class="breadcrumb-item active text-primary" aria-current="page">Dashboard</li>
+                </ol>
+            </nav>
+            <h3 class="fw-bold mb-0 text-dark">
+                <i class="bi bi-speedometer2 text-primary me-2"></i>Placement &amp; Skill Analytics
+            </h3>
+            <p class="text-muted mb-0" style="font-size:13.5px;">
+                Comprehensive real-time cohort KPIs, skill gaps, industry demand, and salary distributions.
+            </p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <a href="{{ url_for('admin.dashboard_export_csv', branch=active_branch, year=active_year) }}" class="btn btn-outline-success btn-sm px-3 shadow-sm">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i>Export Analytics CSV
+            </a>
+            <a href="{{ url_for('admin.employment') }}" class="btn btn-outline-secondary btn-sm px-3 shadow-sm">
+                <i class="bi bi-building-check me-1"></i>Manage Employment
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:12px;">
+        <div class="card-body py-3 px-4">
+            <form method="GET" action="{{ url_for('admin.dashboard') }}" id="filterForm" class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <span class="text-muted fw-semibold" style="font-size:13px;">
+                        <i class="bi bi-funnel text-primary me-1"></i>Filters:
+                    </span>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="visually-hidden" for="filterBranch">Branch</label>
+                    <select name="branch" id="filterBranch" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="All" {% if not active_branch or active_branch.lower() == 'all' %}selected{% endif %}>All Branches</option>
+                        {% for b in branches %}
+                        <option value="{{ b }}" {% if active_branch == b %}selected{% endif %}>{{ b }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="visually-hidden" for="filterYear">Graduation Year</label>
+                    <select name="year" id="filterYear" class="form-select form-select-sm" onchange="this.form.submit()">
+                        <option value="All" {% if not active_year or active_year.lower() == 'all' %}selected{% endif %}>All Graduation Years</option>
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if active_year == y|string %}selected{% endif %}>Class of {{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if active_branch or active_year %}
+                <div class="col-auto">
+                    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-link btn-sm text-decoration-none text-danger p-0" style="font-size:12.5px;">
+                        <i class="bi bi-x-circle me-1"></i>Clear Filters
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- 6 KPI CARDS -->
+    <div class="row g-3 mb-4">
+        <!-- 1. Total Students -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #0d6efd !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Total Students</span>
+                    <h3 class="fw-bold my-1 text-dark">{{ analytics.kpis.total_students }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-people me-1"></i>Enrolled cohort</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Placed Students -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #198754 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Total Placed</span>
+                    <h3 class="fw-bold my-1 text-success">{{ analytics.kpis.placed_count }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-check-circle me-1"></i>Verified offers</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Placement Rate -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #0dcaf0 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Placement %</span>
+                    <h3 class="fw-bold my-1 text-info">{{ analytics.kpis.placement_pct_display }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-percent me-1"></i>Success rate</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Average Salary -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #ffc107 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Average Salary</span>
+                    <h3 class="fw-bold my-1 text-dark" style="font-size:1.4rem;">{{ analytics.kpis.avg_salary_display }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-cash me-1"></i>Placed cohort</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Median Salary -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #6f42c1 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Median Salary</span>
+                    <h3 class="fw-bold my-1 text-dark" style="font-size:1.4rem;">{{ analytics.kpis.median_salary_display }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-graph-up me-1"></i>50th percentile</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Average Skill Match -->
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0" style="border-radius:12px; border-left: 4px solid #fd7e14 !important;">
+                <div class="card-body p-3">
+                    <span class="text-muted text-uppercase fw-semibold" style="font-size:11px; letter-spacing:0.5px;">Avg Match Score</span>
+                    <h3 class="fw-bold my-1 text-dark">{{ analytics.kpis.avg_match_score_display }}</h3>
+                    <span class="text-muted" style="font-size:11.5px;"><i class="bi bi-bullseye me-1"></i>Target job match</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 MAIN CHARTS ROW -->
+    <div class="row g-4 mb-4">
+        <!-- 1. Placement Status Doughnut -->
+        <div class="col-lg-6 col-xl-3">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-pie-chart-fill text-primary me-2"></i>(1) Placement Status
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Doughnut</span>
+                </div>
+                <div class="card-body p-3 d-flex flex-column justify-content-center align-items-center">
+                    <div style="position: relative; height: 230px; width: 100%;">
+                        <canvas id="chartPlacementStatus"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Top Industry Skills Horizontal Bar -->
+        <div class="col-lg-6 col-xl-3">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-bar-chart-fill text-success me-2"></i>(2) Top Industry Skills
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Demand</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="position: relative; height: 230px; width: 100%;">
+                        <canvas id="chartTopSkills"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Common Skill Gaps Horizontal Bar -->
+        <div class="col-lg-6 col-xl-3">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>(3) Common Skill Gaps
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Missing</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="position: relative; height: 230px; width: 100%;">
+                        <canvas id="chartSkillGaps"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Branch-Wise Placement Bar -->
+        <div class="col-lg-6 col-xl-3">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-diagram-3-fill text-info me-2"></i>(4) Branch Placement
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Total vs Placed</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="position: relative; height: 230px; width: 100%;">
+                        <canvas id="chartBranchPlacement"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 LIGHT EXTRAS CHARTS ROW -->
+    <div class="row g-4 mb-4">
+        <!-- Extra 1: Skill Improvement Over Time Line Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-graph-up text-primary me-2"></i>Skill Proficiency Improvement Over Time
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">
+                        {{ analytics.improvement.granularity|title }}ly Timeline
+                    </span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="position: relative; height: 240px; width: 100%;">
+                        <canvas id="chartSkillImprovement"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Extra 2: Salary Distribution Bar Chart -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-cash-stack text-warning me-2"></i>Placed Salary Distribution (INR LPA)
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Package Bins</span>
+                </div>
+                <div class="card-body p-3">
+                    <div style="position: relative; height: 240px; width: 100%;">
+                        <canvas id="chartSalaryDistribution"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2 TABLES ROW -->
+    <div class="row g-4">
+        <!-- Table 1: Average Salary by Job Role -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-table text-primary me-2"></i>Average Salary by Job Role
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Placed Offers</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3 py-2">Job Role</th>
+                                    <th class="text-center py-2">Students</th>
+                                    <th class="text-end pe-3 py-2">Average Package</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if analytics.salary_by_role %}
+                                    {% for row in analytics.salary_by_role %}
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-dark">{{ row.role }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">{{ row.count }}</span>
+                                        </td>
+                                        <td class="text-end pe-3 fw-bold text-success">{{ row.average_salary_display }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-4 text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>No placed salary records found for this filter.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table 2: Job Role Distribution -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm h-100" style="border:1px solid var(--border-color); border-radius:14px;">
+                <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark" style="font-size:14px;">
+                        <i class="bi bi-pie-chart text-info me-2"></i>Job Role Placement Distribution
+                    </h6>
+                    <span class="badge bg-light text-muted border" style="font-size:11px;">Hiring Roles</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" style="font-size:13px;">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-3 py-2">Job Role</th>
+                                    <th class="text-center py-2">Count</th>
+                                    <th class="pe-3 py-2" style="width: 45%;">Share of Placed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if analytics.role_distribution %}
+                                    {% for row in analytics.role_distribution %}
+                                    <tr>
+                                        <td class="ps-3 fw-semibold text-dark">{{ row.role }}</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle">{{ row.count }}</span>
+                                        </td>
+                                        <td class="pe-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 6px;">
+                                                    <div class="progress-bar bg-primary" role="progressbar" style="width: {{ row.percentage }}%;"></div>
+                                                </div>
+                                                <span class="text-muted fw-semibold" style="font-size:11.5px; width:40px;">{{ row.percentage }}%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-4 text-muted">
+                                            <i class="bi bi-info-circle me-1"></i>No role distribution data available for this filter.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- CHART.JS INITIALIZATION -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const rawData = {{ analytics | tojson }};
+
+    // Helper to render empty state on canvas if dataset empty
+    function renderEmptyState(canvasId, text) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#6c757d';
+        ctx.font = '13px system-ui, -apple-system, sans-serif';
+        ctx.fillText(text || 'No data yet', canvas.width / 2, canvas.height / 2);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (1) Placement Status Doughnut Chart
+    // ─────────────────────────────────────────────────────────────
+    const placementData = rawData.placement || {};
+    const pValues = (placementData.chart_data && placementData.chart_data.values) || [0, 0, 0, 0];
+    const totalP = pValues.reduce((a, b) => a + b, 0);
+
+    if (totalP === 0) {
+        renderEmptyState('chartPlacementStatus', 'No placement records yet');
+    } else {
+        new Chart(document.getElementById('chartPlacementStatus'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Placed', 'In Progress', 'Not Placed', 'Unrecorded'],
+                datasets: [{
+                    data: pValues,
+                    backgroundColor: ['#198754', '#ffc107', '#dc3545', '#adb5bd'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const val = ctx.raw || 0;
+                                const pct = totalP > 0 ? ((val / totalP) * 100).toFixed(1) : 0;
+                                return ` ${ctx.label}: ${val} (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '65%'
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (2) Top Industry Skills Horizontal Bar Chart
+    // ─────────────────────────────────────────────────────────────
+    const demandedSkills = rawData.skills_demanded || [];
+    if (!demandedSkills.length) {
+        renderEmptyState('chartTopSkills', 'No job skills cataloged yet');
+    } else {
+        new Chart(document.getElementById('chartTopSkills'), {
+            type: 'bar',
+            data: {
+                labels: demandedSkills.map(s => s.skill_name),
+                datasets: [{
+                    label: 'Required in Jobs',
+                    data: demandedSkills.map(s => s.job_count),
+                    backgroundColor: '#0d6efd',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (3) Common Skill Gaps Horizontal Bar Chart
+    // ─────────────────────────────────────────────────────────────
+    const missingSkills = rawData.skills_missing || [];
+    if (!missingSkills.length) {
+        renderEmptyState('chartSkillGaps', 'No skill gap analyses recorded yet');
+    } else {
+        new Chart(document.getElementById('chartSkillGaps'), {
+            type: 'bar',
+            data: {
+                labels: missingSkills.map(s => s.skill_name),
+                datasets: [{
+                    label: 'Students Missing Skill',
+                    data: missingSkills.map(s => s.missing_count),
+                    backgroundColor: '#dc3545',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { beginAtZero: true, ticks: { precision: 0 } },
+                    y: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (4) Branch-Wise Placement Grouped Bar Chart
+    // ─────────────────────────────────────────────────────────────
+    const branchData = rawData.branch_wise || [];
+    if (!branchData.length) {
+        renderEmptyState('chartBranchPlacement', 'No branch data found');
+    } else {
+        new Chart(document.getElementById('chartBranchPlacement'), {
+            type: 'bar',
+            data: {
+                labels: branchData.map(b => b.branch),
+                datasets: [
+                    {
+                        label: 'Total Students',
+                        data: branchData.map(b => b.total),
+                        backgroundColor: '#adb5bd',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Placed',
+                        data: branchData.map(b => b.placed),
+                        backgroundColor: '#198754',
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                },
+                scales: {
+                    x: { ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (5) Skill Proficiency Improvement Over Time Line Chart
+    // ─────────────────────────────────────────────────────────────
+    const improvementData = rawData.improvement || {};
+    const timelineLabels = improvementData.chart_labels || [];
+    const timelineValues = improvementData.chart_values || [];
+
+    if (!timelineLabels.length) {
+        renderEmptyState('chartSkillImprovement', 'No proficiency progress logged yet');
+    } else {
+        new Chart(document.getElementById('chartSkillImprovement'), {
+            type: 'line',
+            data: {
+                labels: timelineLabels,
+                datasets: [{
+                    label: 'Avg Proficiency Level',
+                    data: timelineValues,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function (ctx) {
+                                const map = { 1: 'Beginner', 2: 'Intermediate', 3: 'Advanced' };
+                                const val = ctx.raw || 0;
+                                return ` Avg Proficiency: ${val} / 3.0`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        min: 0,
+                        max: 3.2,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(v) {
+                                if (v === 1) return 'Beginner (1.0)';
+                                if (v === 2) return 'Intermediate (2.0)';
+                                if (v === 3) return 'Advanced (3.0)';
+                                return '';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // (6) Placed Salary Distribution Bar Chart
+    // ─────────────────────────────────────────────────────────────
+    const salaryData = rawData.salary || {};
+    const salaryBins = salaryData.bins || [];
+    const totalBinsCount = salaryBins.reduce((a, b) => a + b.count, 0);
+
+    if (totalBinsCount === 0) {
+        renderEmptyState('chartSalaryDistribution', 'No placed salary data recorded yet');
+    } else {
+        new Chart(document.getElementById('chartSalaryDistribution'), {
+            type: 'bar',
+            data: {
+                labels: salaryBins.map(b => b.label),
+                datasets: [{
+                    label: 'Placed Students',
+                    data: salaryBins.map(b => b.count),
+                    backgroundColor: '#ffc107',
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision: 0 } },
+                    x: { ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

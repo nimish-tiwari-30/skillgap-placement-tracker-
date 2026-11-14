@@ -1,0 +1,336 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Breadcrumb Navigation -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb" style="font-size:13px;">
+            <li class="breadcrumb-item"><a href="{{ url_for('student.companies') }}" class="text-decoration-none">Target Companies</a></li>
+            <li class="breadcrumb-item active fw-semibold" aria-current="page">{{ company_name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Company Header Banner -->
+    <div class="card shadow-sm mb-4" style="border-radius:16px; background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-primary);">
+        <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="p-3 rounded-3 bg-primary text-white fs-3 d-flex align-items-center justify-content-center" style="width:60px; height:60px;">
+                        <i class="bi bi-buildings"></i>
+                    </div>
+                    <div>
+                        <h2 class="fw-bold mb-1" style="font-size:26px; color: var(--text-primary);">{{ company_name }}</h2>
+                        <div class="d-flex align-items-center gap-3 text-muted" style="font-size:13px;">
+                            <span><i class="bi bi-briefcase me-1"></i>{{ jobs|length }} Active Postings Found</span>
+                            <span><i class="bi bi-globe me-1"></i>Country: {{ country|upper }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('student.companies') }}" class="btn btn-outline-secondary btn-sm px-3">
+                        <i class="bi bi-arrow-left me-1"></i>Choose Another Company
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mandatory Honest Disclaimer Note -->
+    <div class="info-note-box shadow-sm d-flex align-items-start gap-3 mb-4" role="note">
+        <i class="bi bi-info-circle-fill text-primary fs-4 mt-1 flex-shrink-0"></i>
+        <div style="font-size:13px; line-height:1.6; color:var(--text-primary);">
+            <strong>About Company Skill Profiles:</strong><br>
+            Company requirements are combined from the job descriptions stored in this system. They show which skills this company's listed jobs ask for, not the company's actual hiring criteria. Demo data.
+        </div>
+    </div>
+
+    {% if not jobs %}
+    <div class="card shadow-sm border-0 p-5 text-center my-4" style="border-radius:16px;">
+        <i class="bi bi-briefcase text-muted mb-3" style="font-size:3rem;"></i>
+        <h5 class="fw-bold">No active job posts found for "{{ company_name }}"</h5>
+        <p class="text-muted" style="font-size:13.5px;">
+            There are currently no active job postings for this company in country ({{ country|upper }}).
+        </p>
+        <div>
+            <a href="{{ url_for('student.companies') }}" class="btn btn-primary btn-sm px-4">Back to Companies</a>
+        </div>
+    </div>
+    {% else %}
+
+    <div class="row g-4">
+
+        <!-- Left Column: Post Selection List -->
+        <div class="col-lg-4 col-xl-4">
+            <div class="card shadow-sm border-0 sticky-top" style="border-radius:14px; top: 20px;">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-list-task text-primary me-2"></i>Select Post at {{ company_name }}
+                    </h6>
+                    <small class="text-muted" style="font-size:12px;">Choose a role below to view required skills</small>
+                </div>
+                <div class="list-group list-group-flush" style="max-height: 700px; overflow-y: auto;">
+                    {% for j in jobs %}
+                    {% set is_active = (selected_job and selected_job.id == j.id) %}
+                    <a href="{{ url_for('student.company_detail', company_name=company_name, country=country, job_id=j.id) }}"
+                       class="list-group-item list-group-item-action p-3 text-decoration-none {% if is_active %}bg-primary-subtle border-start border-primary border-4{% endif %}"
+                       style="transition: all 0.2s ease;">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <h6 class="fw-bold mb-0 text-dark" style="font-size:13.5px;">
+                                {% if is_active %}<i class="bi bi-check-circle-fill text-primary me-1"></i>{% endif %}
+                                {{ j.title }}
+                            </h6>
+                        </div>
+                        {% if j.location %}
+                        <p class="text-muted mb-1" style="font-size:12px;">
+                            <i class="bi bi-geo-alt me-1 text-danger"></i>{{ j.location }}
+                        </p>
+                        {% endif %}
+                        <div class="d-flex align-items-center gap-2 mt-2">
+                            {% if j.contract_type %}
+                            <span class="badge bg-light text-dark border" style="font-size:10.5px;">{{ j.contract_type }}</span>
+                            {% endif %}
+                            {% if j.salary_min or j.salary_max %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:10.5px;">
+                                {% if j.salary_min and j.salary_max %}
+                                    ₹{{ (j.salary_min / 100000)|round(1) }}L - ₹{{ (j.salary_max / 100000)|round(1) }}L
+                                {% elif j.salary_min %}
+                                    from ₹{{ (j.salary_min / 100000)|round(1) }}L
+                                {% else %}
+                                    up to ₹{{ (j.salary_max / 100000)|round(1) }}L
+                                {% endif %}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Skills Extraction & Skill Gap Analysis for Selected Post -->
+        <div class="col-lg-8 col-xl-8">
+            {% if analysis and selected_job %}
+
+            <!-- Selected Post Title & Metrics Card -->
+            <div class="card shadow-sm border-0 mb-4" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                        <div>
+                            <span class="badge bg-primary-subtle text-primary mb-2" style="font-size:11px;">
+                                <i class="bi bi-check2-circle me-1"></i>Active Post Analysis
+                            </span>
+                            <h4 class="fw-bold mb-1">{{ selected_job.title }}</h4>
+                            <p class="text-muted mb-0" style="font-size:13px;">
+                                <i class="bi bi-building me-1"></i>{{ company_name }} &bull; 
+                                <i class="bi bi-geo-alt me-1 text-danger"></i>{{ selected_job.location or 'Location not specified' }}
+                            </p>
+                        </div>
+                        <div>
+                            {% if selected_job.redirect_url and selected_job.redirect_url != '#' %}
+                            <a href="{{ selected_job.redirect_url }}" target="_blank" class="btn btn-outline-primary btn-sm fw-semibold">
+                                <i class="bi bi-box-arrow-up-right me-1"></i>View on Adzuna
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Match Score Cards -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 text-center" style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2);">
+                                <div class="text-muted fw-semibold" style="font-size:11.5px; text-transform:uppercase;">Overall Match</div>
+                                <div class="fs-3 fw-bold text-primary mt-1">{{ analysis.overall_match_pct }}%</div>
+                                <small class="text-muted" style="font-size:11px;">Weighted match for this post</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 text-center" style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2);">
+                                <div class="text-muted fw-semibold" style="font-size:11.5px; text-transform:uppercase;">Skills Matched</div>
+                                <div class="fs-3 fw-bold text-success mt-1">{{ analysis.matched_count }} / {{ analysis.total_required }}</div>
+                                <small class="text-muted" style="font-size:11px;">{{ analysis.coverage_pct }}% coverage</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-3 text-center" style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <div class="text-muted fw-semibold" style="font-size:11.5px; text-transform:uppercase;">Missing Skills</div>
+                                <div class="fs-3 fw-bold text-danger mt-1">{{ analysis.missing_count }}</div>
+                                <small class="text-muted" style="font-size:11px;">Skills to develop</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Extracted Required Skills for this Post -->
+            <div class="card shadow-sm border-0 mb-4" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-cpu text-primary me-2"></i>Skills Required for "{{ selected_job.title }}"
+                    </h6>
+                    <span class="badge bg-secondary-subtle text-secondary" style="font-size:11px;">
+                        {{ analysis.total_required }} Technical Skills Detected
+                    </span>
+                </div>
+                <div class="card-body p-4">
+                    {% if analysis.required_skills %}
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        {% for s in analysis.required_skills %}
+                        {% if s.is_matched %}
+                        <span class="badge rounded-pill p-2 px-3 d-flex align-items-center gap-2"
+                              style="font-size:12px; font-weight:500; background: rgba(16, 185, 129, 0.12); color:#059669; border:1px solid rgba(16, 185, 129, 0.3);">
+                            <i class="bi bi-check-circle-fill"></i>
+                            {{ s.skill_name }}
+                            {% if s.count > 1 %}
+                            <small class="opacity-75">({{ s.count }}x)</small>
+                            {% endif %}
+                            <span class="badge bg-success text-white" style="font-size:10px;">Matched</span>
+                        </span>
+                        {% else %}
+                        <span class="badge rounded-pill p-2 px-3 d-flex align-items-center gap-2"
+                              style="font-size:12px; font-weight:500; background: rgba(239, 68, 68, 0.1); color:#dc2626; border:1px solid rgba(239, 68, 68, 0.25);">
+                            <i class="bi bi-exclamation-circle"></i>
+                            {{ s.skill_name }}
+                            {% if s.count > 1 %}
+                            <small class="opacity-75">({{ s.count }}x)</small>
+                            {% endif %}
+                            <span class="badge bg-danger text-white" style="font-size:10px;">Needed</span>
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0" style="font-size:13px;">
+                        General technical skills required. See the job description below for details.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Matched vs Missing Breakdown -->
+            <div class="row g-4 mb-4">
+                <!-- Matched Skills -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                        <div class="card-header bg-white border-bottom p-3">
+                            <h6 class="fw-bold mb-0 text-success">
+                                <i class="bi bi-check-circle-fill me-2"></i>Matched in Your Profile ({{ analysis.matched_count }})
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            {% if analysis.matched_skills %}
+                            <ul class="list-group list-group-flush">
+                                {% for ms in analysis.matched_skills %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-2 px-0 bg-transparent">
+                                    <span class="fw-semibold text-dark" style="font-size:13px;">{{ ms.skill_name }}</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle" style="font-size:11px;">
+                                        {{ ms.proficiency or 'Acquired' }}
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div class="text-center py-4 text-muted" style="font-size:13px;">
+                                <i class="bi bi-dash-circle fs-3 d-block mb-1 text-muted"></i>
+                                No matching skills found in your profile yet.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Missing Skills -->
+                <div class="col-md-6">
+                    <div class="card h-100 shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                        <div class="card-header bg-white border-bottom p-3">
+                            <h6 class="fw-bold mb-0 text-danger">
+                                <i class="bi bi-x-circle-fill me-2"></i>Skills to Acquire for this Role ({{ analysis.missing_count }})
+                            </h6>
+                        </div>
+                        <div class="card-body p-3">
+                            {% if analysis.missing_skills %}
+                            <ul class="list-group list-group-flush">
+                                {% for mis in analysis.missing_skills %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center p-2 px-0 bg-transparent">
+                                    <span class="fw-semibold text-dark" style="font-size:13px;">{{ mis.skill_name }}</span>
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:11px;">
+                                        Required
+                                    </span>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% else %}
+                            <div class="text-center py-4 text-success" style="font-size:13px;">
+                                <i class="bi bi-trophy fs-3 d-block mb-1 text-success"></i>
+                                <strong>100% skill match!</strong> You meet all detected skill requirements for this post.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recommended Courses for Missing Skills -->
+            {% if analysis.missing_skills %}
+            <div class="card shadow-sm border-0 mb-4" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-journal-bookmark text-primary me-2"></i>Recommended Courses to Qualify for this Post
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    {% set has_recs = false %}
+                    <div class="row g-3">
+                        {% for mis in analysis.missing_skills %}
+                            {% for c in mis.courses %}
+                            {% set has_recs = true %}
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded-3 h-100" style="background:#f8fafc;">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <span class="badge bg-primary-subtle text-primary" style="font-size:10px;">For {{ mis.skill_name }}</span>
+                                        <span class="text-warning fw-bold" style="font-size:11px;">★ {{ c.rating or '4.8' }}</span>
+                                    </div>
+                                    <h6 class="fw-bold text-dark mb-1" style="font-size:13px;">{{ c.title }}</h6>
+                                    <p class="text-muted mb-2" style="font-size:11.5px;">Provider: {{ c.provider }} &bull; {{ c.duration_hours }}h</p>
+                                    <a href="{{ url_for('student.learning_path') }}" class="btn btn-sm btn-outline-primary w-100" style="font-size:11px;">
+                                        Add to Learning Path
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    {% if not has_recs %}
+                    <p class="text-muted mb-0" style="font-size:13px;">
+                        Explore our course catalog to find tailored tutorials for {{ analysis.missing_skills|map(attribute='skill_name')|join(', ') }}.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Full Job Description Card -->
+            <div class="card shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h6 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-file-text text-primary me-2"></i>Job Description & Criteria
+                    </h6>
+                </div>
+                <div class="card-body p-4">
+                    <div style="font-size:13.5px; line-height:1.7; color:var(--text-secondary); white-space: pre-line;">
+                        {{ selected_job.description }}
+                    </div>
+                </div>
+            </div>
+
+            {% endif %}
+        </div>
+
+    </div>
+
+    {% endif %}
+
+</div>
+{% endblock %}

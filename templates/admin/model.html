@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}ML Model Management{% endblock %}
+
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Admin</a></li>
+        <li class="breadcrumb-item active" aria-current="page">ML Model Management</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h3 class="fw-bold mb-1">
+                <i class="bi bi-robot text-primary me-2"></i>Employment Outcome Classifier
+            </h3>
+            <p class="text-muted mb-0 small">
+                Supervised Machine Learning model predicting placement outcomes from pre-decision academic & skill indicators.
+            </p>
+        </div>
+        <div>
+            <form method="POST" action="{{ url_for('admin.model_retrain') }}" class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary btn-sm shadow-sm" id="retrain-model-btn">
+                    <i class="bi bi-arrow-repeat me-1"></i>Retrain Model
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Data Sufficiency Gate Alert -->
+    {% if model_info.is_demo %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 border-start border-warning border-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-start justify-content-between flex-wrap gap-3">
+                <div class="d-flex gap-3">
+                    <div class="fs-2 text-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">Data Gate: Not enough real historical data yet (Synthetic Demo Mode Active)</h6>
+                        <p class="text-muted small mb-2">
+                            The system requires at least <strong>{{ real_data_threshold }} labeled historical placement outcomes</strong> (Placed / Not Placed) to train on real data.
+                            Current database count is <strong>{{ current_labeled_count }} / {{ real_data_threshold }}</strong>.
+                        </p>
+                        <div class="progress" style="width: 280px; height: 8px;">
+                            <div class="progress-bar bg-warning" role="progressbar" 
+                                 style="width: {{ (current_labeled_count / real_data_threshold * 100) | round }}%;"
+                                 aria-valuenow="{{ current_labeled_count }}" aria-valuemin="0" aria-valuemax="{{ real_data_threshold }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                        <i class="bi bi-shield-exclamation me-1"></i>Fallback to Synthetic Data
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm rounded-3 mb-4 border-start border-success border-4">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="fs-2 text-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold mb-1 text-dark">Production Ready: Real Data Active</h6>
+                        <p class="text-muted small mb-0">
+                            Trained on <strong>{{ model_info.real_data_count }}</strong> verified student placement outcomes.
+                        </p>
+                    </div>
+                </div>
+                <span class="badge bg-success px-3 py-2 rounded-pill">Real Historical Data Mode</span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- KPI Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 text-center h-100">
+                <span class="text-muted small text-uppercase fw-semibold">Accuracy</span>
+                <h3 class="fw-bold text-primary my-2">{{ (model_info.metrics.accuracy * 100) | round(1) }}%</h3>
+                <span class="text-muted extra-small">Test Split Score</span>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 text-center h-100">
+                <span class="text-muted small text-uppercase fw-semibold">Precision</span>
+                <h3 class="fw-bold text-success my-2">{{ (model_info.metrics.precision * 100) | round(1) }}%</h3>
+                <span class="text-muted extra-small">Positive Predictive Value</span>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 text-center h-100">
+                <span class="text-muted small text-uppercase fw-semibold">Recall</span>
+                <h3 class="fw-bold text-info my-2">{{ (model_info.metrics.recall * 100) | round(1) }}%</h3>
+                <span class="text-muted extra-small">Sensitivity / Placement Rate</span>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-3 p-3 text-center h-100">
+                <span class="text-muted small text-uppercase fw-semibold">F1-Score</span>
+                <h3 class="fw-bold text-purple my-2" style="color: #6f42c1;">{{ (model_info.metrics.f1_score * 100) | round(1) }}%</h3>
+                <span class="text-muted extra-small">Harmonic Mean</span>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-8 col-sm-12">
+            <div class="card border-0 shadow-sm rounded-3 p-3 text-center h-100">
+                <span class="text-muted small text-uppercase fw-semibold">5-Fold Cross Validation</span>
+                <h3 class="fw-bold text-dark my-2">
+                    {{ (model_info.metrics.cv_accuracy_mean * 100) | round(1) }}% 
+                    <small class="text-muted fs-6">± {{ (model_info.metrics.cv_accuracy_std * 100) | round(1) }}%</small>
+                </h3>
+                <span class="text-muted extra-small">K-Fold Stratified Cross-Validation Accuracy</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts & Diagnostics Row -->
+    <div class="row g-4 mb-4">
+        <!-- Feature Importances Card -->
+        <div class="col-lg-7 col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="fw-bold mb-1">
+                        <i class="bi bi-bar-chart-fill text-primary me-2"></i>Feature Importance Weights
+                    </h5>
+                    <p class="text-muted small mb-3">Relative contribution of each feature in Random Forest decision trees</p>
+                </div>
+                <div class="card-body pt-0">
+                    <canvas id="featureImportanceChart" style="max-height: 280px;"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confusion Matrix Card -->
+        <div class="col-lg-5 col-md-12">
+            <div class="card border-0 shadow-sm rounded-3 h-100 p-3">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="fw-bold mb-1">
+                        <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Confusion Matrix
+                    </h5>
+                    <p class="text-muted small mb-3">Evaluation on 20% held-out test split</p>
+                </div>
+                <div class="card-body pt-0 d-flex flex-column justify-content-center">
+                    {% if model_info.confusion_matrix and model_info.confusion_matrix|length == 2 %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-center align-middle mb-0">
+                            <thead>
+                                <tr class="table-light">
+                                    <th></th>
+                                    <th>Pred: Not Placed</th>
+                                    <th>Pred: Placed</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <th class="table-light text-nowrap">Actual: Not Placed</th>
+                                    <td class="bg-success-subtle p-3">
+                                        <div class="fs-4 fw-bold text-success">{{ model_info.confusion_matrix[0][0] }}</div>
+                                        <small class="text-muted">True Negative</small>
+                                    </td>
+                                    <td class="bg-danger-subtle p-3">
+                                        <div class="fs-4 fw-bold text-danger">{{ model_info.confusion_matrix[0][1] }}</div>
+                                        <small class="text-muted">False Positive</small>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="table-light text-nowrap">Actual: Placed</th>
+                                    <td class="bg-danger-subtle p-3">
+                                        <div class="fs-4 fw-bold text-danger">{{ model_info.confusion_matrix[1][0] }}</div>
+                                        <small class="text-muted">False Negative</small>
+                                    </td>
+                                    <td class="bg-success-subtle p-3">
+                                        <div class="fs-4 fw-bold text-success">{{ model_info.confusion_matrix[1][1] }}</div>
+                                        <small class="text-muted">True Positive</small>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-4">Confusion matrix unavailable.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Architecture & Compliance Details -->
+    <div class="card border-0 shadow-sm rounded-3 p-4">
+        <h5 class="fw-bold mb-3">
+            <i class="bi bi-info-circle text-primary me-2"></i>Model Architecture & Feature Leakage Policy
+        </h5>
+        <div class="row g-3 small text-muted">
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-dark mb-2">Algorithm & Hyperparameters</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>Model:</strong> RandomForestClassifier</li>
+                        <li><strong>Estimators:</strong> 200 trees</li>
+                        <li><strong>Max Depth:</strong> 8 levels</li>
+                        <li><strong>Class Weights:</strong> balanced</li>
+                        <li><strong>Training Samples:</strong> {{ model_info.n_training_samples }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-dark mb-2">Feature Leakage Prevention</h6>
+                    <p class="mb-0">
+                        Only features available strictly <em>before</em> placement outcomes are accepted. 
+                        <strong>Outcome fields</strong> (Company name, CTC/salary package, placement date) are quarantined and never passed as model features.
+                    </p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 bg-light rounded-3 h-100">
+                    <h6 class="fw-bold text-dark mb-2">Metadata & Governance</h6>
+                    <ul class="list-unstyled mb-0">
+                        <li><strong>Last Trained:</strong> {{ model_info.trained_at[:19] | replace('T', ' ') }} UTC</li>
+                        <li><strong>Scaling:</strong> StandardScaler (fitted on train split)</li>
+                        <li><strong>Storage:</strong> <code>ml/saved_models/employment_model.pkl</code></li>
+                        <li><strong>Target:</strong> Binary (0 = Not Placed, 1 = Placed)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const featObj = {{ model_info.feature_importances | tojson }};
+    const labels = Object.keys(featObj).map(k => {
+        return k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    });
+    const values = Object.values(featObj).map(v => Math.round(v * 1000) / 10);
+
+    const ctx = document.getElementById('featureImportanceChart');
+    if (ctx && labels.length > 0) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Importance (%)',
+                    data: values,
+                    backgroundColor: [
+                        '#4361ee', '#3f37c9', '#4895ef', '#4cc9f0', 
+                        '#7209b7', '#f72585', '#2ec4b6'
+                    ],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.raw + '% relative weight';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Importance Percentage (%)' }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

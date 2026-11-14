@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Edit Job Posting{% else %}Post New Job{% endif %}{% endblock %}
+{% block content %}
+<div class="animate-in">
+
+    <!-- Breadcrumb / Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('admin.jobs') }}" class="text-decoration-none text-muted" style="font-size:13px;">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Jobs
+                </a>
+            </div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">{% if is_edit %}Edit Job Posting{% else %}Post New Job{% endif %}</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                {% if is_edit %}
+                Update job details. Upon saving, you will be redirected to review and fine-tune required skills.
+                {% else %}
+                Enter job details and paste description text. Required skills will be auto-extracted via NLP.
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Form Card -->
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Target Job Role <span class="text-danger">*</span>
+                                </label>
+                                {{ form.job_role_id(class="form-select", id="job-role-select") }}
+                                <div class="form-text" style="font-size:11px;">Students benchmark their career gap against this role category.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Job Title <span class="text-danger">*</span>
+                                </label>
+                                {{ form.title(class="form-control", placeholder="e.g. Senior Data Analyst, Python Backend Engineer", id="job-title-input") }}
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Company Name <span class="text-danger">*</span>
+                                </label>
+                                {{ form.company_name(class="form-control", placeholder="e.g. Demo Tech Corp", id="job-company-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold" style="font-size:13px;">Location</label>
+                                {{ form.location(class="form-control", placeholder="e.g. Remote, Bangalore, Delhi NCR", id="job-location-input") }}
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label fw-semibold" style="font-size:13px;">Min Experience</label>
+                                {{ form.min_experience(class="form-control", placeholder="e.g. 0-1 years, 2+ years", id="job-exp-input") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" style="font-size:13px;">
+                                Job Description Text <span class="text-danger">*</span>
+                            </label>
+                            {{ form.description_text(class="form-control font-monospace", rows="10", placeholder="Paste the complete job description text here including requirements, responsibilities, technical qualifications, tools and frameworks...", id="job-desc-textarea", style="font-size:13px;") }}
+                            <div class="form-text text-primary" style="font-size:12px;">
+                                <i class="bi bi-magic me-1"></i>When you save, our NLP skill extractor will scan this text against our canonical dictionary and aliases.
+                            </div>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            {{ form.is_active(class="form-check-input", id="job-active-switch") }}
+                            <label class="form-check-label fw-semibold" for="job-active-switch" style="font-size:13px;">
+                                Visible to Students (Active Listing)
+                            </label>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                            <a href="{{ url_for('admin.jobs') }}" class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary" id="save-job-btn">
+                                <i class="bi bi-arrow-right-circle me-1"></i>Save & Review Extracted Skills
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

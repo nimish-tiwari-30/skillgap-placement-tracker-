@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Employment Status - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="max-width: 1100px;">
+
+    <!-- Breadcrumb & Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1" style="font-size:12.5px;">
+                    <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}" class="text-decoration-none text-muted">Dashboard</a></li>
+                    <li class="breadcrumb-item active text-primary" aria-current="page">Employment Status</li>
+                </ol>
+            </nav>
+            <h4 class="fw-bold mb-1 text-dark">
+                <i class="bi bi-building-check text-primary me-2"></i>Employment &amp; Placement Status
+            </h4>
+            <p class="text-muted mb-0" style="font-size:13.5px;">
+                Record your placement outcomes, company details, package, and skills utilized on the job.
+            </p>
+        </div>
+        <div>
+            <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Current Outcome Overview Card -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="fw-bold mb-0 text-dark" style="font-size:15px;">
+                <i class="bi bi-person-badge text-primary me-2"></i>Current Employment Record
+            </h6>
+            {% if outcome %}
+            <span class="badge rounded-pill {% if outcome.status == 'Placed' %}bg-success-subtle text-success border border-success-subtle{% elif outcome.status == 'In Progress' %}bg-warning-subtle text-warning border border-warning-subtle{% else %}bg-danger-subtle text-danger border border-danger-subtle{% endif %}" style="font-size:12px;">
+                {{ outcome.status }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="card-body p-4">
+            {% if outcome %}
+            <div class="row g-4 align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-start gap-3">
+                        <div class="p-3 rounded-circle {% if outcome.status == 'Placed' %}bg-success-subtle text-success{% elif outcome.status == 'In Progress' %}bg-warning-subtle text-warning{% else %}bg-danger-subtle text-danger{% endif %}" style="font-size:1.8rem; line-height:1;">
+                            {% if outcome.status == 'Placed' %}
+                            <i class="bi bi-check-circle-fill"></i>
+                            {% elif outcome.status == 'In Progress' %}
+                            <i class="bi bi-hourglass-split"></i>
+                            {% else %}
+                            <i class="bi bi-x-circle-fill"></i>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h5 class="fw-bold text-dark mb-1">
+                                {% if outcome.status == 'Placed' %}
+                                {{ outcome.role_title }} &bull; <span class="text-primary">{{ outcome.company_name }}</span>
+                                {% else %}
+                                Status: {{ outcome.status }}
+                                {% endif %}
+                            </h5>
+                            <div class="d-flex flex-wrap gap-2 text-muted mb-2" style="font-size:13px;">
+                                {% if outcome.placement_type and outcome.placement_type != 'Unknown' %}
+                                <span><i class="bi bi-geo-alt me-1"></i>{{ outcome.placement_type }}</span> &bull;
+                                {% endif %}
+                                {% if outcome.placement_date_formatted %}
+                                <span><i class="bi bi-calendar-check me-1"></i>Placed: {{ outcome.placement_date_formatted }}</span> &bull;
+                                {% endif %}
+                                {% if outcome.salary_package_lpa %}
+                                <span><i class="bi bi-cash-stack me-1"></i>Package: <strong class="text-dark">{{ "%.2f"|format(outcome.salary_package_lpa) }} LPA</strong></span>
+                                {% endif %}
+                            </div>
+
+                            {% if outcome.notes %}
+                            <p class="text-muted mb-2" style="font-size:13px; font-style:italic;">
+                                "{{ outcome.notes }}"
+                            </p>
+                            {% endif %}
+
+                            <!-- Skills Used in Job -->
+                            {% if outcome.skills_used %}
+                            <div class="mt-3">
+                                <span class="text-muted fw-semibold d-block mb-1" style="font-size:12px;">Skills Used in Job:</span>
+                                <div class="d-flex flex-wrap gap-1">
+                                    {% for sk in outcome.skills_used %}
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-1" style="font-size:11.5px;">
+                                        <i class="bi bi-check2 me-1"></i>{{ sk.name }}
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 text-md-end">
+                    <form method="POST" action="{{ url_for('student.delete_employment') }}" onsubmit="return confirm('Are you sure you want to remove your employment outcome record?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                            <i class="bi bi-trash3 me-1"></i>Remove Record
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <!-- Friendly empty state -->
+            <div class="text-center py-4">
+                <i class="bi bi-briefcase text-muted" style="font-size:2.4rem;"></i>
+                <h6 class="fw-bold text-dark mt-2 mb-1">No Employment Record Found</h6>
+                <p class="text-muted mb-0" style="font-size:13.5px;">
+                    Fill out the form below to register your placement or current job hunting status.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Record / Update Form -->
+    <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-header bg-transparent py-3 border-bottom">
+            <h6 class="fw-bold mb-0 text-dark" style="font-size:15px;">
+                <i class="bi bi-pencil-square text-primary me-2"></i>{% if outcome %}Update Employment Details{% else %}Record Employment Outcome{% endif %}
+            </h6>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="{{ url_for('student.employment') }}" id="employment-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="row g-3">
+                    <!-- Status -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" style="font-size:13px;">
+                            Placement Status <span class="text-danger">*</span>
+                        </label>
+                        <select name="status" id="status-select" class="form-select" required onchange="togglePlacedFields()">
+                            <option value="Placed" {% if outcome and outcome.status == 'Placed' %}selected{% endif %}>Placed</option>
+                            <option value="In Progress" {% if not outcome or outcome.status == 'In Progress' %}selected{% endif %}>In Progress (Searching / Interviewing)</option>
+                            <option value="Not Placed" {% if outcome and outcome.status == 'Not Placed' %}selected{% endif %}>Not Placed (Higher Studies / Opt-out)</option>
+                        </select>
+                        <small class="text-muted" style="font-size:11.5px;">Status can be updated anytime as your placement progresses.</small>
+                    </div>
+
+                    <!-- Placement Type -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Placement Channel</label>
+                        <select name="placement_type" class="form-select">
+                            <option value="Campus" {% if outcome and outcome.placement_type == 'Campus' %}selected{% endif %}>Campus Placement</option>
+                            <option value="Off-Campus" {% if outcome and outcome.placement_type == 'Off-Campus' %}selected{% endif %}>Off-Campus</option>
+                            <option value="Internship-Converted" {% if outcome and outcome.placement_type == 'Internship-Converted' %}selected{% endif %}>PPO / Internship-Converted</option>
+                            <option value="Unknown" {% if not outcome or outcome.placement_type == 'Unknown' %}selected{% endif %}>Other / Not Specified</option>
+                        </select>
+                    </div>
+
+                    <!-- Conditional Placed Fields Container -->
+                    <div id="placed-fields" class="col-12">
+                        <div class="row g-3 p-3 rounded-3" style="background:rgba(0,0,0,0.02); border:1px solid var(--border-color);">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Company Name <span class="text-danger placed-required">*</span>
+                                </label>
+                                <input type="text" name="company_name" id="company_name" class="form-control" placeholder="e.g. Microsoft, Infosys, Deloitte" value="{{ outcome.company_name if outcome else '' }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Job Role <span class="text-danger placed-required">*</span>
+                                </label>
+                                <input type="text" name="role_title" id="role_title" class="form-control" list="role-suggestions" placeholder="e.g. Data Analyst, Software Engineer" value="{{ outcome.role_title if outcome else '' }}">
+                                <datalist id="role-suggestions">
+                                    {% for r in job_roles %}
+                                    <option value="{{ r.title }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Salary Package (LPA in INR) <span class="text-danger placed-required">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">&#8377;</span>
+                                    <input type="number" step="0.01" min="0.1" max="150" name="salary_package_lpa" id="salary_package_lpa" class="form-control" placeholder="e.g. 7.50" value="{{ outcome.salary_package_lpa if outcome and outcome.salary_package_lpa else '' }}">
+                                    <span class="input-group-text">LPA</span>
+                                </div>
+                                <small class="text-muted" style="font-size:11.5px;">Visible only to you and institution career administrators.</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold" style="font-size:13px;">
+                                    Offer / Placement Date <span class="text-danger placed-required">*</span>
+                                </label>
+                                <input type="date" name="placement_date" id="placement_date" class="form-control" max="{{ current_year }}-12-31" value="{{ outcome.placement_date if outcome else '' }}">
+                                <small class="text-muted" style="font-size:11.5px;">Date cannot be in the future.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Skills Used in Job -->
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-semibold" style="font-size:13px;">
+                            Skills Utilized on the Job
+                        </label>
+                        <p class="text-muted mb-2" style="font-size:12px;">
+                            Select the key technologies, libraries, and tools you actively use in this job or internship.
+                        </p>
+                        <div class="card p-3" style="max-height:200px; overflow-y:auto; border:1px solid var(--border-color); background:var(--card-bg);">
+                            <div class="row g-2">
+                                {% for sk in all_skills %}
+                                <div class="col-md-4 col-sm-6">
+                                    <div class="form-check" style="font-size:13px;">
+                                        <input class="form-check-input" type="checkbox" name="skills_used" value="{{ sk.id }}" id="skill_{{ sk.id }}"
+                                               {% if outcome and sk.id in outcome.skill_ids %}checked{% endif %}>
+                                        <label class="form-check-label text-truncate" for="skill_{{ sk.id }}" title="{{ sk.name }}">
+                                            {{ sk.name }} <small class="text-muted">({{ sk.category or 'Skill' }})</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Notes -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold" style="font-size:13px;">Additional Notes (Optional)</label>
+                        <textarea name="notes" class="form-control" rows="2" placeholder="Any additional context regarding offer, joining date, or preparation...">{{ outcome.notes if outcome and outcome.notes else '' }}</textarea>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="col-12 text-end mt-4">
+                        <a href="{{ url_for('student.dashboard') }}" class="btn btn-outline-secondary me-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-cloud-arrow-up me-1"></i>Save Outcome
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function togglePlacedFields() {
+    var status = document.getElementById('status-select').value;
+    var placedBox = document.getElementById('placed-fields');
+    var companyInput = document.getElementById('company_name');
+    var roleInput = document.getElementById('role_title');
+    var salaryInput = document.getElementById('salary_package_lpa');
+    var dateInput = document.getElementById('placement_date');
+    var reqStars = document.querySelectorAll('.placed-required');
+
+    if (status === 'Placed') {
+        placedBox.style.display = 'block';
+        companyInput.required = true;
+        roleInput.required = true;
+        salaryInput.required = true;
+        dateInput.required = true;
+        reqStars.forEach(function(el) { el.style.display = 'inline'; });
+    } else {
+        companyInput.required = false;
+        roleInput.required = false;
+        salaryInput.required = false;
+        dateInput.required = false;
+        reqStars.forEach(function(el) { el.style.display = 'none'; });
+        // Clear salary for non-placed so user doesn't accidentally trigger validation error
+        salaryInput.value = '';
+    }
+}
+
+// Set maximum date input to today
+document.addEventListener('DOMContentLoaded', function() {
+    var todayStr = new Date().toISOString().split('T')[0];
+    var dateInput = document.getElementById('placement_date');
+    if (dateInput) {
+        dateInput.setAttribute('max', todayStr);
+    }
+    togglePlacedFields();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
+    <meta name="description" content="Skill Gap & Employment Outcome Tracking System — Bridge the academia-industry gap with AI-driven analytics.">
+    <title>{% block title %}{{ title | default('Dashboard') }}{% endblock %} | {{ app_name }}</title>
+
+    <!-- Inline Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Custom Design System CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+<!-- Skip Link for Accessibility -->
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+{% if current_user.is_authenticated %}
+<!-- ═══════════════════════════════════════════════════════════
+     AUTHENTICATED DASHBOARD LAYOUT: Sidebar + Navbar
+═══════════════════════════════════════════════════════════ -->
+<div class="app-wrapper">
+
+    <!-- ── SIDEBAR ─────────────────────────────────────────────── -->
+    <nav class="sidebar" id="sidebar" aria-label="Main Navigation">
+        <!-- Brand -->
+        <a href="{{ url_for('admin.dashboard') if current_user.is_admin() else url_for('student.dashboard') }}" class="sidebar-brand">
+            <div class="brand-icon">
+                <i class="bi bi-mortarboard-fill"></i>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">SkillGap AI</span>
+                <span class="brand-sub">Placement Tracker</span>
+            </div>
+        </a>
+
+        <!-- Navigation Links -->
+        <ul class="sidebar-nav">
+            {% if current_user.is_student() %}
+            <!-- ── STUDENT NAV ── -->
+            <li class="nav-section-label">Main</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('student.dashboard') }}"
+                   class="nav-link {% if request.endpoint == 'student.dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.profile') }}"
+                   class="nav-link {% if request.endpoint == 'student.profile' %}active{% endif %}">
+                    <i class="bi bi-person-badge"></i>
+                    <span>My Profile</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.resume_upload') }}"
+                   class="nav-link {% if request.endpoint == 'student.resume_upload' %}active{% endif %}">
+                    <i class="bi bi-file-earmark-arrow-up"></i>
+                    <span>Upload Resume</span>
+                </a>
+            </li>
+
+            <li class="nav-section-label">Skills &amp; Jobs</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('student.skill_gap') }}"
+                   class="nav-link {% if request.endpoint == 'student.skill_gap' %}active{% endif %}">
+                    <i class="bi bi-bar-chart-steps"></i>
+                    <span>Skill Gap</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.jobs') }}"
+                   class="nav-link {% if request.endpoint in ['student.jobs', 'student.job_detail'] %}active{% endif %}">
+                    <i class="bi bi-briefcase"></i>
+                    <span>Jobs Catalog</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.job_matching') }}"
+                   class="nav-link {% if request.endpoint in ['student.job_matching', 'student.job_match_detail'] %}active{% endif %}">
+                    <i class="bi bi-bullseye"></i>
+                    <span>Job Matching</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.recommendations') }}"
+                   class="nav-link {% if request.endpoint == 'student.recommendations' %}active{% endif %}">
+                    <i class="bi bi-lightbulb"></i>
+                    <span>Course Suggestions</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.companies') }}"
+                   class="nav-link {% if request.endpoint in ['student.companies', 'student.company_detail', 'student.compare_companies'] %}active{% endif %}">
+                    <i class="bi bi-buildings"></i>
+                    <span>Companies</span>
+                </a>
+            </li>
+
+            <li class="nav-section-label">Career &amp; Growth</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('student.learning_path') }}"
+                   class="nav-link {% if request.endpoint == 'student.learning_path' %}active{% endif %}">
+                    <i class="bi bi-signpost-split"></i>
+                    <span>Learning Path</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.progress') }}"
+                   class="nav-link {% if request.endpoint == 'student.progress' %}active{% endif %}">
+                    <i class="bi bi-graph-up"></i>
+                    <span>My Progress</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.employment') }}"
+                   class="nav-link {% if request.endpoint == 'student.employment' %}active{% endif %}">
+                    <i class="bi bi-building-check"></i>
+                    <span>Employment</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.analytics') }}"
+                   class="nav-link {% if request.endpoint == 'student.analytics' %}active{% endif %}">
+                    <i class="bi bi-pie-chart"></i>
+                    <span>Personal Analytics</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('student.prediction') }}"
+                   class="nav-link {% if request.endpoint == 'student.prediction' %}active{% endif %}">
+                    <i class="bi bi-cpu"></i>
+                    <span>Outcome Prediction</span>
+                </a>
+            </li>
+
+            {% elif current_user.is_admin() %}
+            <!-- ── ADMIN NAV: Grouped by Overview, Data, Analytics ── -->
+            <li class="nav-section-label">Overview</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('admin.dashboard') }}"
+                   class="nav-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <li class="nav-section-label">Data</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('admin.students') }}"
+                   class="nav-link {% if request.endpoint in ['admin.students', 'admin.student_detail'] %}active{% endif %}">
+                    <i class="bi bi-people"></i>
+                    <span>Students</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.job_roles') }}"
+                   class="nav-link {% if request.endpoint == 'admin.job_roles' %}active{% endif %}">
+                    <i class="bi bi-diagram-3"></i>
+                    <span>Job Roles</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.jobs') }}"
+                   class="nav-link {% if request.endpoint in ['admin.jobs', 'admin.create_job', 'admin.edit_job', 'admin.job_skills_review'] %}active{% endif %}">
+                    <i class="bi bi-briefcase"></i>
+                    <span>Job Postings</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.skills') }}"
+                   class="nav-link {% if request.endpoint == 'admin.skills' %}active{% endif %}">
+                    <i class="bi bi-tags"></i>
+                    <span>Skill Taxonomy</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.courses') }}"
+                   class="nav-link {% if request.endpoint == 'admin.courses' %}active{% endif %}">
+                    <i class="bi bi-journal-bookmark"></i>
+                    <span>Course Catalog</span>
+                </a>
+            </li>
+
+            <li class="nav-section-label">Analytics</li>
+
+            <li class="nav-item">
+                <a href="{{ url_for('admin.employment') }}"
+                   class="nav-link {% if request.endpoint == 'admin.employment' %}active{% endif %}">
+                    <i class="bi bi-building-check"></i>
+                    <span>Employment Outcomes</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.model_management') }}"
+                   class="nav-link {% if request.endpoint == 'admin.model_management' %}active{% endif %}">
+                    <i class="bi bi-robot"></i>
+                    <span>ML Outcome Model</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+
+        <!-- Sidebar Bottom User Card & Role Info -->
+        <div class="sidebar-footer">
+            <div class="sidebar-user-card">
+                <div class="user-avatar-circle">
+                    {{ current_user.email[0].upper() }}
+                </div>
+                <div class="user-meta-info">
+                    <span class="user-full-name">
+                        {% if current_user.student and current_user.student.full_name %}
+                            {{ current_user.student.full_name }}
+                        {% else %}
+                            Administrator
+                        {% endif %}
+                    </span>
+                    <span class="user-role-badge badge-role-{{ current_user.role }}">
+                        {{ current_user.role | capitalize }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Logout action with POST + CSRF -->
+            <form method="POST" action="{{ url_for('auth.logout') }}" class="m-0">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="logout-action-btn">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Sign Out</span>
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    <!-- ── MAIN CONTENT AREA ──────────────────────────────────── -->
+    <div class="main-content">
+
+        <!-- TOP NAVBAR -->
+        <header class="top-navbar" role="banner">
+            <button class="sidebar-toggle-btn" id="sidebarToggle" aria-label="Toggle Navigation Drawer">
+                <i class="bi bi-list"></i>
+            </button>
+
+            <div class="navbar-breadcrumb">
+                {% block breadcrumb %}
+                <span>{{ title | default('Dashboard') }}</span>
+                {% endblock %}
+            </div>
+
+            <div class="navbar-actions">
+                <!-- Live Clock -->
+                <span class="current-time text-muted small d-none d-md-inline-flex align-items-center gap-1" id="currentTime"></span>
+            </div>
+        </header>
+
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container px-4 pt-3" role="status">
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category in ['error', 'danger'] else category }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-{% if category == 'success' %}check-circle{% elif category in ['error', 'danger'] %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                <span>{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <!-- PAGE CONTENT -->
+        <main class="page-content" id="main-content" role="main">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="page-footer" role="contentinfo">
+            <div>
+                <span>&copy; {{ current_year }} {{ app_name }} &bull; Skill Gap &amp; Employment Outcome Tracking</span>
+            </div>
+            <div>
+                <span class="badge bg-secondary-subtle text-secondary-emphasis">Demo Project &mdash; Uses Synthetic Data</span>
+            </div>
+        </footer>
+
+    </div><!-- /main-content -->
+</div><!-- /app-wrapper -->
+
+{% else %}
+<!-- ═══════════════════════════════════════════════════════════
+     UNAUTHENTICATED LAYOUT (Login, Register, Landing)
+═══════════════════════════════════════════════════════════ -->
+<div class="auth-wrapper">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index:9999;min-width:340px;max-width:90%;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category in ['error', 'danger'] else category }} alert-dismissible fade show shadow-lg" role="alert">
+            <i class="bi bi-{% if category == 'success' %}check-circle{% elif category in ['error', 'danger'] %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+            <span>{{ message }}</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% block auth_content %}{% endblock %}
+</div>
+{% endif %}
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Chart.js (available on all pages) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<!-- Unified Chart Theme Palette -->
+<script src="{{ url_for('static', filename='js/chart-theme.js') }}"></script>
+<!-- Main Application JS -->
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

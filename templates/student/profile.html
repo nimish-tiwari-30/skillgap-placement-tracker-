@@ -1,0 +1,521 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Tab styling */
+.profile-tabs .nav-link { color: var(--text-muted); border-bottom: 2px solid transparent; padding: 10px 18px; font-size:13.5px; font-weight:500; }
+.profile-tabs .nav-link.active { color: var(--primary); border-bottom-color: var(--primary); background: none; }
+.profile-tabs .nav-link:hover { color: var(--primary); }
+
+/* Proficiency badge colors */
+.badge-beg { background: #fef3c7; color: #92400e; }
+.badge-int { background: #dbeafe; color: #1e40af; }
+.badge-adv { background: #d1fae5; color: #065f46; }
+
+/* Skill row */
+.skill-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border-color); }
+.skill-row:last-child { border-bottom: none; }
+
+/* Profile progress bar */
+.completion-bar { height:8px; border-radius:99px; background: var(--border-color); }
+.completion-fill { height:100%; border-radius:99px; background: linear-gradient(90deg, var(--primary), #818cf8); transition: width .5s ease; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">My Profile</h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Profile completion: <strong>{{ completion.percentage }}%</strong>
+            </p>
+        </div>
+        <!-- Mini completion bar -->
+        <div style="width:160px;">
+            <div class="completion-bar">
+                <div class="completion-fill" style="width:{{ completion.percentage }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <ul class="nav profile-tabs mb-4 border-bottom">
+        {% for tab_id, tab_label, icon in [
+            ('academic',    'Academic',    'mortarboard'),
+            ('skills',      'Skills',      'tags'),
+            ('certs',       'Certifications', 'award'),
+            ('projects',    'Projects',    'folder'),
+            ('internships', 'Internships', 'building'),
+        ] %}
+        <li class="nav-item">
+            <a class="nav-link {% if active_tab == tab_id %}active{% endif %}"
+               href="{{ url_for('student.profile', tab=tab_id) }}"
+               id="tab-{{ tab_id }}">
+                <i class="bi bi-{{ icon }} me-1"></i>{{ tab_label }}
+            </a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB: ACADEMIC
+    ════════════════════════════════════════════════════════════ -->
+    <div {% if active_tab != 'academic' %}style="display:none"{% endif %}>
+        <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-4"><i class="bi bi-mortarboard me-2 text-primary"></i>Academic Details</h6>
+                <form method="POST" action="{{ url_for('student.update_profile') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name</label>
+                            <input class="form-control" type="text" name="full_name"
+                                   value="{{ student.full_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Roll Number <span class="text-muted">(read-only)</span></label>
+                            <input class="form-control" type="text" value="{{ student.roll_number }}" readonly disabled>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Branch</label>
+                            <select class="form-control" name="branch" required>
+                                {% for b in ['Computer Science','Information Technology','Electronics','Mechanical','Civil','Electrical'] %}
+                                <option value="{{ b }}" {% if student.branch == b %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CGPA</label>
+                            <input class="form-control" type="number" name="cgpa" step="0.01" min="0" max="10"
+                                   value="{{ student.cgpa or '' }}" placeholder="e.g. 8.5">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Graduation Year</label>
+                            <select class="form-control" name="graduation_year">
+                                <option value="">Select Year</option>
+                                {% for y in range(2020, 2031) %}
+                                <option value="{{ y }}" {% if student.graduation_year == y %}selected{% endif %}>{{ y }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone</label>
+                            <input class="form-control" type="text" name="phone"
+                                   value="{{ student.phone or '' }}" placeholder="+91 9876543210">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">LinkedIn URL</label>
+                            <input class="form-control" type="url" name="linkedin_url"
+                                   value="{{ student.linkedin_url or '' }}" placeholder="https://linkedin.com/in/...">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">GitHub URL</label>
+                            <input class="form-control" type="url" name="github_url"
+                                   value="{{ student.github_url or '' }}" placeholder="https://github.com/...">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Aptitude Score <small class="text-muted">(0–100)</small></label>
+                            <input class="form-control" type="number" name="aptitude_score" min="0" max="100"
+                                   value="{{ student.aptitude_score if student.aptitude_score is not none else '' }}" placeholder="e.g. 75">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Communication Score <small class="text-muted">(0–100)</small></label>
+                            <input class="form-control" type="number" name="communication_score" min="0" max="100"
+                                   value="{{ student.communication_score if student.communication_score is not none else '' }}" placeholder="e.g. 80">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary" id="save-academic-btn">
+                            <i class="bi bi-floppy me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB: SKILLS
+    ════════════════════════════════════════════════════════════ -->
+    <div {% if active_tab != 'skills' %}style="display:none"{% endif %}>
+
+        <!-- Add Skill Form -->
+        <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add a Skill</h6>
+                <form method="POST" action="{{ url_for('student.add_skill') }}" novalidate id="add-skill-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="skill_id" id="selected-skill-id">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label">Skill Name</label>
+                            <!-- Searchable input — JS fills hidden skill_id -->
+                            <input type="text" class="form-control" id="skill-search-input"
+                                   placeholder="Type to search... (e.g. Python, SQL)"
+                                   autocomplete="off">
+                            <div id="skill-suggestions" class="position-absolute bg-white border rounded shadow-sm"
+                                 style="z-index:1000; width:280px; max-height:200px; overflow-y:auto; display:none;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Proficiency</label>
+                            <select class="form-control" name="proficiency" id="proficiency-select">
+                                <option value="Beginner">1 — Beginner</option>
+                                <option value="Intermediate">2 — Intermediate</option>
+                                <option value="Advanced">3 — Advanced</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100" id="add-skill-btn">
+                                <i class="bi bi-plus me-1"></i>Add Skill
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Current Skills List -->
+        <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-tags me-2 text-primary"></i>My Skills
+                    <span class="badge bg-primary ms-2">{{ student.skills | length }}</span>
+                </h6>
+
+                {% if student.skills %}
+                <!-- Group by category -->
+                {% set ns = namespace(prev_cat='') %}
+                {% for ss in student.skills | sort(attribute='skill.category') %}
+                    {% if ss.skill.category != ns.prev_cat %}
+                    {% if ns.prev_cat %}<!-- end prev section -->{% endif %}
+                    <p class="text-muted mt-3 mb-1" style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;">
+                        {{ ss.skill.category or 'Other' }}
+                    </p>
+                    {% set ns.prev_cat = ss.skill.category %}
+                    {% endif %}
+
+                    <div class="skill-row">
+                        <div class="flex-grow-1">
+                            <span class="fw-500">{{ ss.skill.name }}</span>
+                        </div>
+                        <!-- Proficiency badge -->
+                        <span class="badge {% if ss.proficiency_level == 'Beginner' %}badge-beg{% elif ss.proficiency_level == 'Intermediate' %}badge-int{% else %}badge-adv{% endif %}"
+                              style="font-size:11px; padding:4px 10px;">
+                            {{ ss.proficiency_level }}
+                        </span>
+                        <!-- Proficiency bar -->
+                        <div class="progress" style="width:80px; height:5px; border-radius:99px;">
+                            <div class="progress-bar bg-primary" style="width:
+                                {% if ss.proficiency_level == 'Beginner' %}33%
+                                {% elif ss.proficiency_level == 'Intermediate' %}66%
+                                {% else %}100%{% endif %};"></div>
+                        </div>
+                        <!-- Update proficiency inline -->
+                        <form method="POST" action="{{ url_for('student.update_skill') }}" class="d-flex gap-1" style="min-width:180px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="skill_id" value="{{ ss.skill_id }}">
+                            <select name="proficiency" class="form-select form-select-sm" style="font-size:12px;">
+                                {% for p in ['Beginner','Intermediate','Advanced'] %}
+                                <option {% if ss.proficiency_level == p %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Update">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </button>
+                        </form>
+                        <!-- Remove -->
+                        <form method="POST" action="{{ url_for('student.remove_skill') }}"
+                              onsubmit="return confirm('Remove {{ ss.skill.name }} from your profile?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="skill_id" value="{{ ss.skill_id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                {% endfor %}
+
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-tags text-muted" style="font-size:2.5rem;"></i>
+                    <p class="text-muted mt-2">No skills added yet. Use the form above to add your first skill!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB: CERTIFICATIONS
+    ════════════════════════════════════════════════════════════ -->
+    <div {% if active_tab != 'certs' %}style="display:none"{% endif %}>
+        <!-- Add cert form -->
+        <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add Certification</h6>
+                <form method="POST" action="{{ url_for('student.add_cert') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Title</label>
+                            <input class="form-control" type="text" name="title" placeholder="AWS Certified Cloud Practitioner" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Issuing Organization</label>
+                            <input class="form-control" type="text" name="issuing_org" placeholder="Amazon Web Services">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Issue Date</label>
+                            <input class="form-control" type="date" name="issue_date">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Expiry Date</label>
+                            <input class="form-control" type="date" name="expiry_date">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Credential URL</label>
+                            <input class="form-control" type="url" name="credential_url" placeholder="https://...">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" id="add-cert-btn">
+                        <i class="bi bi-plus me-1"></i>Add Certification
+                    </button>
+                </form>
+            </div>
+        </div>
+        <!-- Cert list -->
+        <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-award me-2 text-primary"></i>My Certifications <span class="badge bg-primary ms-1">{{ student.certifications | length }}</span></h6>
+                {% if student.certifications %}
+                {% for cert in student.certifications %}
+                <div class="d-flex align-items-start justify-content-between py-3 border-bottom">
+                    <div>
+                        <strong>{{ cert.title }}</strong>
+                        {% if cert.issuing_org %}<span class="text-muted ms-2">— {{ cert.issuing_org }}</span>{% endif %}
+                        <div class="text-muted" style="font-size:12px;">
+                            {% if cert.issue_date %}Issued: {{ cert.issue_date.strftime('%b %Y') }}{% endif %}
+                            {% if cert.expiry_date %} · Expires: {{ cert.expiry_date.strftime('%b %Y') }}{% endif %}
+                            {% if cert.credential_url %} · <a href="{{ cert.credential_url }}" target="_blank" rel="noopener">View</a>{% endif %}
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('student.delete_cert', cert_id=cert.id) }}"
+                          onsubmit="return confirm('Delete this certification?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center py-3">No certifications yet. Add your first one above!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB: PROJECTS
+    ════════════════════════════════════════════════════════════ -->
+    <div {% if active_tab != 'projects' %}style="display:none"{% endif %}>
+        <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add Project</h6>
+                <form method="POST" action="{{ url_for('student.add_project') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Project Title</label>
+                            <input class="form-control" type="text" name="title" placeholder="Skill Gap Tracker" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Tech Stack</label>
+                            <input class="form-control" type="text" name="tech_stack" placeholder="Python, Flask, MySQL">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="Brief description..."></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project URL</label>
+                            <input class="form-control" type="url" name="project_url" placeholder="https://github.com/...">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Date</label>
+                            <input class="form-control" type="date" name="start_date">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">End Date</label>
+                            <input class="form-control" type="date" name="end_date">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" id="add-project-btn">
+                        <i class="bi bi-plus me-1"></i>Add Project
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-folder me-2 text-primary"></i>My Projects <span class="badge bg-primary ms-1">{{ student.projects | length }}</span></h6>
+                {% if student.projects %}
+                {% for proj in student.projects %}
+                <div class="d-flex align-items-start justify-content-between py-3 border-bottom">
+                    <div>
+                        <strong>{{ proj.title }}</strong>
+                        {% if proj.tech_stack %}<span class="badge bg-secondary ms-2" style="font-size:11px;">{{ proj.tech_stack }}</span>{% endif %}
+                        {% if proj.description %}<p class="text-muted mb-0 mt-1" style="font-size:13px;">{{ proj.description[:120] }}{% if proj.description | length > 120 %}…{% endif %}</p>{% endif %}
+                        <div class="text-muted" style="font-size:12px;">
+                            {% if proj.start_date %}{{ proj.start_date.strftime('%b %Y') }}{% endif %}
+                            {% if proj.end_date %} → {{ proj.end_date.strftime('%b %Y') }}{% endif %}
+                            {% if proj.project_url %} · <a href="{{ proj.project_url }}" target="_blank" rel="noopener">View</a>{% endif %}
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('student.delete_project', project_id=proj.id) }}"
+                          onsubmit="return confirm('Delete this project?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center py-3">No projects yet. Add your first project above!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════
+         TAB: INTERNSHIPS
+    ════════════════════════════════════════════════════════════ -->
+    <div {% if active_tab != 'internships' %}style="display:none"{% endif %}>
+        <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-plus-circle me-2 text-primary"></i>Add Internship</h6>
+                <form method="POST" action="{{ url_for('student.add_internship') }}" novalidate>
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Company Name</label>
+                            <input class="form-control" type="text" name="company_name" placeholder="Google" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Role / Designation</label>
+                            <input class="form-control" type="text" name="role_title" placeholder="Software Engineering Intern" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="2" placeholder="What you worked on..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input class="form-control" type="date" name="start_date">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input class="form-control" type="date" name="end_date">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3" id="add-internship-btn">
+                        <i class="bi bi-plus me-1"></i>Add Internship
+                    </button>
+                </form>
+            </div>
+        </div>
+        <div class="card" style="border:1px solid var(--border-color); border-radius:14px;">
+            <div class="card-body p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-building me-2 text-primary"></i>My Internships <span class="badge bg-primary ms-1">{{ student.internships | length }}</span></h6>
+                {% if student.internships %}
+                {% for intern in student.internships %}
+                <div class="d-flex align-items-start justify-content-between py-3 border-bottom">
+                    <div>
+                        <strong>{{ intern.role_title }}</strong>
+                        <span class="text-muted ms-2">@ {{ intern.company_name }}</span>
+                        {% if intern.description %}<p class="text-muted mb-0 mt-1" style="font-size:13px;">{{ intern.description[:120] }}{% if intern.description | length > 120 %}…{% endif %}</p>{% endif %}
+                        <div class="text-muted" style="font-size:12px;">
+                            {% if intern.start_date %}{{ intern.start_date.strftime('%b %Y') }}{% endif %}
+                            {% if intern.end_date %} → {{ intern.end_date.strftime('%b %Y') }}{% endif %}
+                        </div>
+                    </div>
+                    <form method="POST" action="{{ url_for('student.delete_internship', intern_id=intern.id) }}"
+                          onsubmit="return confirm('Delete this internship?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p class="text-muted text-center py-3">No internships yet. Add your first one above!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div><!-- /animate-in -->
+
+{% block extra_js %}
+<script>
+// ── Skill Autocomplete ───────────────────────────────────────────────────────
+const searchInput  = document.getElementById('skill-search-input');
+const hiddenId     = document.getElementById('selected-skill-id');
+const suggestions  = document.getElementById('skill-suggestions');
+
+if (searchInput) {
+    let debounceTimer;
+
+    searchInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        const q = this.value.trim();
+        if (q.length < 1) { suggestions.style.display = 'none'; return; }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`{{ url_for('student.skill_search') }}?q=${encodeURIComponent(q)}`)
+                .then(r => r.json())
+                .then(data => {
+                    suggestions.innerHTML = '';
+                    if (data.length === 0) {
+                        suggestions.innerHTML = '<div class="px-3 py-2 text-muted" style="font-size:13px;">No skills found</div>';
+                    } else {
+                        data.forEach(skill => {
+                            const item = document.createElement('div');
+                            item.className = 'px-3 py-2 suggestion-item';
+                            item.style.cssText = 'cursor:pointer; font-size:13px;';
+                            item.innerHTML = `<strong>${skill.name}</strong> <small class="text-muted">· ${skill.category}</small>`;
+                            item.addEventListener('mouseenter', () => item.style.background = '#f1f5f9');
+                            item.addEventListener('mouseleave', () => item.style.background = '');
+                            item.addEventListener('click', () => {
+                                searchInput.value  = skill.name;
+                                hiddenId.value     = skill.id;
+                                suggestions.style.display = 'none';
+                            });
+                            suggestions.appendChild(item);
+                        });
+                    }
+                    suggestions.style.display = 'block';
+                });
+        }, 200);
+    });
+
+    // Hide suggestions on outside click
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !suggestions.contains(e.target)) {
+            suggestions.style.display = 'none';
+        }
+    });
+
+    // Validate before submit
+    document.getElementById('add-skill-form').addEventListener('submit', function (e) {
+        if (!hiddenId.value) {
+            e.preventDefault();
+            alert('Please select a skill from the dropdown suggestions.');
+            searchInput.focus();
+        }
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}
