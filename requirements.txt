@@ -20,6 +20,7 @@ cryptography==43.0.3            # Required by PyMySQL for MySQL 8 auth (caching_
 
 # Environment & Config
 python-dotenv==1.0.1            # Loads .env variables into os.environ
+requests==2.32.3                # HTTP requests for external APIs (Adzuna live jobs)
 Werkzeug==3.0.6                 # WSGI utilities, password hashing, secure file handling
 
 # Data & Analytics

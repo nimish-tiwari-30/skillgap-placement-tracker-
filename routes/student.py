@@ -1075,16 +1075,15 @@ def companies():
     companies_data = []
     error_msg = None
 
-    if is_configured:
-        ok, res = adzuna_service.search_companies_adzuna(
-            query=q,
-            country=country,
-            page=1
-        )
-        if ok:
-            companies_data = res.get('companies', [])
-        else:
-            error_msg = res.get('error')
+    ok, res = adzuna_service.search_companies_adzuna(
+        query=q,
+        country=country,
+        page=1
+    )
+    if ok:
+        companies_data = res.get('companies', [])
+    else:
+        error_msg = res.get('error')
 
     return render_template(
         'student/companies.html',

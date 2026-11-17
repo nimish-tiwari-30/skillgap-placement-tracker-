@@ -13,7 +13,10 @@ Features:
 import os
 import re
 import logging
-import requests
+try:
+    import requests
+except ImportError:
+    requests = None
 from typing import Dict, List, Any, Optional, Tuple
 from urllib.parse import quote_plus
 
@@ -464,6 +467,13 @@ def search_adzuna_jobs(
     if company:
         params['company'] = company
 
+    if not requests:
+        return False, {
+            'error': 'Requests package not available.',
+            'results': [],
+            'total': 0
+        }
+
     try:
         response = requests.get(url, params=params, timeout=10)
         if response.status_code in (401, 403):
@@ -517,7 +527,7 @@ def search_adzuna_jobs(
             'country': country
         }
 
-    except requests.RequestException as e:
+    except Exception as e:
         logger.error(f"Adzuna API request error: {e}")
         return False, {
             'error': f"Connection to Adzuna API failed: {str(e)}",
