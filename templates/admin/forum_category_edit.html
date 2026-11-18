@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Edit Category — {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb" style="font-size:13px;">
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}" class="text-decoration-none">Admin</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('admin.forum_categories') }}" class="text-decoration-none">Forum Categories</a></li>
+            <li class="breadcrumb-item active fw-semibold" aria-current="page">Edit {{ category.name }}</li>
+        </ol>
+    </nav>
+
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="font-size:22px;">
+            <i class="bi bi-pencil-square text-primary me-2"></i>Edit Forum Category
+        </h2>
+        <p class="text-muted mb-0" style="font-size:13px;">
+            Update the title, slug, description, or sort order for this category.
+        </p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('admin.edit_forum_category', category_id=category.id) }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Category Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name(class="form-control " ~ ("is-invalid" if form.name.errors else ""), id="name", maxlength="100") }}
+                            {% for error in form.name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="mb-3">
+                            <label for="slug" class="form-label fw-semibold" style="font-size:13.5px;">
+                                URL Slug <span class="text-danger">*</span>
+                            </label>
+                            {{ form.slug(class="form-control " ~ ("is-invalid" if form.slug.errors else ""), id="slug", maxlength="100") }}
+                            <div class="form-text" style="font-size:11.5px;">Used in URL: /forum/c/&lt;slug&gt;. Lowercase, numbers and hyphens only.</div>
+                            {% for error in form.slug.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Description
+                            </label>
+                            {{ form.description(class="form-control " ~ ("is-invalid" if form.description.errors else ""), id="description", rows="3", maxlength="255") }}
+                            {% for error in form.description.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Sort Order -->
+                        <div class="mb-4">
+                            <label for="sort_order" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Sort Order
+                            </label>
+                            {{ form.sort_order(class="form-control " ~ ("is-invalid" if form.sort_order.errors else ""), id="sort_order") }}
+                            <div class="form-text" style="font-size:11.5px;">Determines display order on the forum home page. Lower numbers appear first.</div>
+                            {% for error in form.sort_order.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                <i class="bi bi-check-lg me-1"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('admin.forum_categories') }}" class="btn btn-outline-secondary px-3">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

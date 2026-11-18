@@ -118,6 +118,15 @@ def setup_database(app=None):
         print("[+] Checking production admin credentials...")
         create_admin_user()
 
+        # 8. Discussion Forum seed (Categories & Demo discussions)
+        print("[+] Seeding Discussion Forum (seed_forum)...")
+        try:
+            import seed_forum
+            seed_forum.seed_forum(app)
+            print("      [OK] seed_forum executed.")
+        except Exception as e:
+            print(f"      [SKIP] seed_forum error/skipped: {e}")
+
         print("==================================================")
         print("  Database Setup Completed Successfully!          ")
         print("==================================================")

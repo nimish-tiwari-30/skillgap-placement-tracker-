@@ -20,6 +20,11 @@ class Config:
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
 
+    # Open Discussion Forum Configuration
+    FORUM_ENABLED = os.environ.get('FORUM_ENABLED', 'true').lower() in ('true', '1', 'yes')
+    FORUM_RATE_LIMIT_THREADS_PER_HOUR = int(os.environ.get('FORUM_RATE_LIMIT_THREADS_PER_HOUR', 5))
+    FORUM_RATE_LIMIT_POSTS_PER_10MIN = int(os.environ.get('FORUM_RATE_LIMIT_POSTS_PER_10MIN', 10))
+
     @staticmethod
     def normalize_database_url(url: str) -> str:
         """

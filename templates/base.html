@@ -148,6 +148,17 @@
                 </a>
             </li>
 
+            {% if forum_enabled %}
+            <li class="nav-section-label">Community</li>
+            <li class="nav-item">
+                <a href="{{ url_for('forum.index') }}"
+                   class="nav-link {% if request.endpoint and request.endpoint.startswith('forum.') %}active{% endif %}">
+                    <i class="bi bi-chat-square-text"></i>
+                    <span>Discussion Forum</span>
+                </a>
+            </li>
+            {% endif %}
+
             {% elif current_user.is_admin() %}
             <!-- ── ADMIN NAV: Grouped by Overview, Data, Analytics ── -->
             <li class="nav-section-label">Overview</li>
@@ -214,6 +225,31 @@
                     <span>ML Outcome Model</span>
                 </a>
             </li>
+
+            {% if forum_enabled %}
+            <li class="nav-section-label">Community &amp; Moderation</li>
+            <li class="nav-item">
+                <a href="{{ url_for('forum.index') }}"
+                   class="nav-link {% if request.endpoint and request.endpoint.startswith('forum.') %}active{% endif %}">
+                    <i class="bi bi-chat-square-text"></i>
+                    <span>Discussion Forum</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.forum_reports') }}"
+                   class="nav-link {% if request.endpoint == 'admin.forum_reports' %}active{% endif %}">
+                    <i class="bi bi-flag"></i>
+                    <span>Forum Reports</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ url_for('admin.forum_categories') }}"
+                   class="nav-link {% if request.endpoint in ['admin.forum_categories', 'admin.edit_forum_category'] %}active{% endif %}">
+                    <i class="bi bi-folder2-open"></i>
+                    <span>Forum Categories</span>
+                </a>
+            </li>
+            {% endif %}
             {% endif %}
         </ul>
 

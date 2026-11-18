@@ -12,6 +12,7 @@ from models.job import JobRole, JobDescription, JobSkill
 from models.gap import SkillGapAnalysis, GapSkill
 from models.course import Course, CourseSkill, CourseProgress, LearningPathItem
 from models.outcome import EmploymentOutcome
+from models.forum import ForumCategory, ForumThread, ForumPost, ForumPostLike, ForumReport
 
 __all__ = [
     'User',
@@ -21,4 +22,5 @@ __all__ = [
     'SkillGapAnalysis', 'GapSkill',
     'Course', 'CourseSkill', 'CourseProgress', 'LearningPathItem',
     'EmploymentOutcome',
+    'ForumCategory', 'ForumThread', 'ForumPost', 'ForumPostLike', 'ForumReport',
 ]

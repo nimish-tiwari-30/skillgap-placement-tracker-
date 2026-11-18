@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% block title %}Discussion Forum{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header & Action -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:24px;">
+                <i class="bi bi-chat-square-text text-primary me-2"></i>Open Discussion Forum
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13.5px;">
+                Discuss placement preparation, skills, courses, company hiring rounds, and interview experiences with peers and staff.
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('forum.new_thread', c=selected_category.slug if selected_category else '') }}" class="btn btn-primary fw-semibold" id="newThreadBtn">
+                <i class="bi bi-plus-circle me-1"></i>Start a Discussion
+            </a>
+            {% if current_user.is_admin() %}
+            <a href="{{ url_for('admin.forum_reports') }}" class="btn btn-outline-danger btn-sm" title="Moderation Reports">
+                <i class="bi bi-shield-exclamation me-1"></i>Moderation
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Community Guidelines Banner -->
+    <div class="card border-0 shadow-sm mb-4" style="border-radius:12px; background: rgba(59, 130, 246, 0.05); border: 1px dashed rgba(59, 130, 246, 0.3) !important;">
+        <div class="card-body p-3 d-flex align-items-start gap-3">
+            <i class="bi bi-info-circle-fill text-primary fs-4 mt-1 flex-shrink-0"></i>
+            <div style="font-size:13px; line-height:1.5;">
+                <strong class="text-primary">Community Guidelines:</strong> Be respectful and supportive. Discussions focus on placements, technical skills, and career growth.
+                <span class="text-muted">Never share phone numbers, passwords, confidential exam leaks, or proprietary materials. All posts are moderated.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Filter Bar (Pills) -->
+    <div class="mb-4">
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="{{ url_for('forum.index', q=search_query, skill=selected_skill.id if selected_skill else None, sort=sort_by) }}"
+               class="badge rounded-pill text-decoration-none px-3 py-2 {% if not selected_category %}bg-primary text-white shadow-sm{% else %}bg-light text-dark border{% endif %}"
+               style="font-size:12.5px; font-weight:500;">
+                <i class="bi bi-grid-fill me-1"></i>All Discussions
+            </a>
+            {% for item in categories_data %}
+            {% set cat = item.category %}
+            {% set is_active = (selected_category and selected_category.id == cat.id) %}
+            <a href="{{ url_for('forum.index', c=cat.slug, q=search_query, skill=selected_skill.id if selected_skill else None, sort=sort_by) }}"
+               class="badge rounded-pill text-decoration-none px-3 py-2 {% if is_active %}bg-primary text-white shadow-sm{% else %}bg-light text-dark border{% endif %}"
+               style="font-size:12.5px; font-weight:500;">
+                {{ cat.name }}
+                <span class="badge {% if is_active %}bg-white text-primary{% else %}bg-secondary-subtle text-secondary{% endif %} ms-1" style="font-size:10.5px;">
+                    {{ item.thread_count }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Search & Secondary Filter Controls -->
+    <div class="card shadow-sm mb-4" style="border:1px solid var(--border-color); border-radius:14px; background:var(--card-bg);">
+        <div class="card-body p-3">
+            <form method="GET" action="{{ url_for('forum.index') }}" class="row g-2 align-items-center">
+                {% if selected_category %}
+                <input type="hidden" name="c" value="{{ selected_category.slug }}">
+                {% endif %}
+
+                <!-- Search Input -->
+                <div class="col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" name="q" value="{{ search_query or '' }}" class="form-control border-start-0"
+                               placeholder="Search discussions by topic or keyword..." style="font-size:13.5px;">
+                    </div>
+                </div>
+
+                <!-- Skill Filter Dropdown -->
+                <div class="col-sm-6 col-md-3">
+                    <select name="skill" class="form-select form-select-sm" style="font-size:13px;">
+                        <option value="">All Skills / Tags</option>
+                        {% for s in all_skills %}
+                        <option value="{{ s.id }}" {% if selected_skill and selected_skill.id == s.id %}selected{% endif %}>
+                            {{ s.name }} ({{ s.category }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="col-sm-6 col-md-2">
+                    <select name="sort" class="form-select form-select-sm" style="font-size:13px;">
+                        <option value="latest_activity" {% if sort_by == 'latest_activity' %}selected{% endif %}>Recent Activity</option>
+                        <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest Created</option>
+                        <option value="most_replies" {% if sort_by == 'most_replies' %}selected{% endif %}>Most Replies</option>
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-md-2 d-flex gap-2 justify-content-end">
+                    <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold" style="font-size:13px;">
+                        <i class="bi bi-funnel me-1"></i>Filter
+                    </button>
+                    {% if search_query or selected_skill or selected_category %}
+                    <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Filters">
+                        <i class="bi bi-x-lg"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Filters Feedback -->
+    {% if selected_category or selected_skill or search_query %}
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3" style="font-size:12.5px;">
+        <span class="text-muted fw-semibold">Filtered by:</span>
+        {% if selected_category %}
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+            Category: {{ selected_category.name }}
+        </span>
+        {% endif %}
+        {% if selected_skill %}
+        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">
+            Skill: {{ selected_skill.name }}
+        </span>
+        {% endif %}
+        {% if search_query %}
+        <span class="badge bg-secondary-subtle text-secondary-emphasis border">
+            Query: "{{ search_query }}"
+        </span>
+        {% endif %}
+        <a href="{{ url_for('forum.index') }}" class="text-decoration-none small text-danger fw-semibold ms-1">
+            Clear all filters
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Discussion Threads List -->
+    {% if threads %}
+    <div class="card shadow-sm border-0 mb-4" style="border-radius:14px; overflow:hidden;">
+        <div class="list-group list-group-flush" id="forumThreadsList">
+            {% for t in threads %}
+            <div class="list-group-item p-3 p-md-4 {% if t.is_pinned %}bg-warning-subtle bg-opacity-25{% endif %}"
+                 style="transition: background-color 0.15s ease; border-color: var(--border-color);">
+                <div class="row align-items-center g-3">
+
+                    <!-- Main Thread Details -->
+                    <div class="col-md-8 col-lg-9">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                            <!-- Category Badge -->
+                            <a href="{{ url_for('forum.index', c=t.category.slug) }}"
+                               class="badge bg-light text-dark border text-decoration-none" style="font-size:11px;">
+                                <i class="bi bi-folder2 me-1 text-primary"></i>{{ t.category.name }}
+                            </a>
+
+                            <!-- Skill Tag if Present -->
+                            {% if t.skill %}
+                            <a href="{{ url_for('forum.index', skill=t.skill.id) }}"
+                               class="badge bg-info-subtle text-info-emphasis text-decoration-none" style="font-size:11px;">
+                                <i class="bi bi-tag me-1"></i>{{ t.skill.name }}
+                            </a>
+                            {% endif %}
+
+                            <!-- Status Indicators -->
+                            {% if t.is_pinned %}
+                            <span class="badge bg-warning text-dark fw-bold" style="font-size:10.5px;">
+                                <i class="bi bi-pin-angle-fill me-1"></i>Pinned
+                            </span>
+                            {% endif %}
+                            {% if t.is_locked %}
+                            <span class="badge bg-secondary text-white" style="font-size:10.5px;">
+                                <i class="bi bi-lock-fill me-1"></i>Locked
+                            </span>
+                            {% endif %}
+                            {% if t.is_deleted %}
+                            <span class="badge bg-danger" style="font-size:10.5px;">
+                                <i class="bi bi-trash3-fill me-1"></i>Deleted (Moderated)
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Thread Title Link -->
+                        <h5 class="fw-bold mb-2">
+                            <a href="{{ url_for('forum.thread_view', thread_id=t.id) }}"
+                               class="text-decoration-none text-dark hover-primary" style="font-size:16.5px;">
+                                {{ t.title }}
+                            </a>
+                        </h5>
+
+                        <!-- Meta Info: Author (Safe identity), Branch, Timestamps -->
+                        <div class="d-flex align-items-center gap-2 flex-wrap text-muted" style="font-size:12.5px;">
+                            <span>By <strong>{{ t.author_info.name }}</strong></span>
+                            {% if t.author_info.is_admin %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle" style="font-size:10px;">Admin</span>
+                            {% else %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle" style="font-size:10px;">Student</span>
+                            {% if t.author_info.branch %}
+                            <span class="text-secondary small">({{ t.author_info.branch }})</span>
+                            {% endif %}
+                            {% endif %}
+                            <span>&bull;</span>
+                            <span title="Created: {{ t.created_at.strftime('%Y-%m-%d %H:%M UTC') }}">
+                                <i class="bi bi-clock me-1"></i>{{ t.created_at.strftime('%b %d, %Y') }}
+                            </span>
+                            {% if t.updated_at and t.updated_at > t.created_at %}
+                            <span class="text-muted fst-italic" style="font-size:11px;">(edited)</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Metrics & Quick Counts -->
+                    <div class="col-md-4 col-lg-3 text-md-end">
+                        <div class="d-flex justify-content-md-end align-items-center gap-3">
+                            <!-- Helpful / Like Count -->
+                            <div class="text-center" style="min-width:55px;">
+                                <div class="fs-5 fw-bold text-primary">
+                                    <i class="bi bi-hand-thumbs-up{% if t.user_has_liked %}-fill{% endif %} me-1"></i>{{ t.like_count }}
+                                </div>
+                                <small class="text-muted" style="font-size:11px;">Helpful</small>
+                            </div>
+
+                            <!-- Replies Count -->
+                            <div class="text-center" style="min-width:55px;">
+                                <div class="fs-5 fw-bold text-dark">
+                                    <i class="bi bi-chat-dots me-1 text-muted"></i>{{ t.reply_count }}
+                                </div>
+                                <small class="text-muted" style="font-size:11px;">Replies</small>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Forum pagination" class="d-flex justify-content-center my-4">
+        <ul class="pagination pagination-sm shadow-sm">
+            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('forum.index', page=pagination.prev_num, c=selected_category.slug if selected_category else None, q=search_query, skill=selected_skill.id if selected_skill else None, sort=sort_by) }}">
+                    &laquo; Previous
+                </a>
+            </li>
+            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('forum.index', page=p, c=selected_category.slug if selected_category else None, q=search_query, skill=selected_skill.id if selected_skill else None, sort=sort_by) }}">
+                    {{ p }}
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+            {% endif %}
+            {% endfor %}
+            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                <a class="page-link" href="{{ url_for('forum.index', page=pagination.next_num, c=selected_category.slug if selected_category else None, q=search_query, skill=selected_skill.id if selected_skill else None, sort=sort_by) }}">
+                    Next &raquo;
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- Friendly Empty State -->
+    <div class="card shadow-sm border-0 p-5 text-center my-4" style="border-radius:16px;">
+        <i class="bi bi-chat-square-dots text-muted mb-3" style="font-size:3.5rem;"></i>
+        <h5 class="fw-bold mb-2">No Discussions Found</h5>
+        <p class="text-muted mb-3" style="font-size:13.5px; max-width:480px; margin: 0 auto;">
+            {% if search_query or selected_category or selected_skill %}
+            No active discussions matched your current filters. Try resetting your search filters or start a discussion on this topic.
+            {% else %}
+            Be the first to start a conversation! Share your placement questions, preparation tips, or project experiences with the college community.
+            {% endif %}
+        </p>
+        <div class="d-flex justify-content-center gap-2">
+            <a href="{{ url_for('forum.new_thread', c=selected_category.slug if selected_category else '') }}" class="btn btn-primary btn-sm px-4">
+                <i class="bi bi-pencil-square me-1"></i>Start a Discussion
+            </a>
+            {% if search_query or selected_category or selected_skill %}
+            <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary btn-sm px-3">
+                Clear Filters
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

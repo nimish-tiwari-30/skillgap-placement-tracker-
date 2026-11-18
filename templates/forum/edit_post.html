@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Edit Reply{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb" style="font-size:13px;">
+            <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}" class="text-decoration-none">Discussion Forum</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('forum.thread_view', thread_id=post.thread_id) }}" class="text-decoration-none">Thread #{{ post.thread_id }}</a></li>
+            <li class="breadcrumb-item active fw-semibold" aria-current="page">Edit Reply</li>
+        </ol>
+    </nav>
+
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="font-size:24px;">
+            <i class="bi bi-pencil text-primary me-2"></i>Edit Reply
+        </h2>
+        <p class="text-muted mb-0" style="font-size:13.5px;">
+            Update your response. An "edited" label will be visible to other members.
+        </p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('forum.edit_post', post_id=post.id) }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- Body -->
+                        <div class="mb-4">
+                            <label for="body" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Reply Content <span class="text-danger">*</span>
+                            </label>
+                            {{ form.body(class="form-control " ~ ("is-invalid" if form.body.errors else ""), id="body", rows="7", maxlength="3000") }}
+                            <div class="form-text" style="font-size:12px;">Max 3,000 characters. Plain text only.</div>
+                            {% for error in form.body.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                                <i class="bi bi-check-lg me-1"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('forum.thread_view', thread_id=post.thread_id) }}" class="btn btn-outline-secondary px-3">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

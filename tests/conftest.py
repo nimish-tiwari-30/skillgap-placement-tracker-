@@ -14,6 +14,7 @@ from models.job import JobRole, JobDescription, JobSkill
 from models.gap import SkillGapAnalysis, GapSkill
 from models.course import Course, CourseSkill, CourseProgress, LearningPathItem
 from models.outcome import EmploymentOutcome, EmploymentOutcomeSkill
+from models.forum import ForumCategory, ForumThread, ForumPost, ForumPostLike, ForumReport
 
 
 @pytest.fixture(scope='session')
@@ -56,6 +57,11 @@ def clean_db(app, app_context):
     _db.session.close()
     _db.session.remove()
     _db.session.expunge_all()
+    _db.session.query(ForumReport).delete()
+    _db.session.query(ForumPostLike).delete()
+    _db.session.query(ForumPost).delete()
+    _db.session.query(ForumThread).delete()
+    _db.session.query(ForumCategory).delete()
     _db.session.query(EmploymentOutcomeSkill).delete()
     _db.session.query(EmploymentOutcome).delete()
     _db.session.query(Resume).delete()

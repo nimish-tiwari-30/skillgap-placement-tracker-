@@ -18,6 +18,10 @@
 | **Secrets Hygiene** | `config.py` (env-based config), `.gitignore` excludes `.env`, placeholder `.env.example` | `tests/test_security.py::test_secrets_hygiene`, `test_session_cookie_settings_and_production_config` | **PASS** |
 | **CSV Formula Injection** | `services/employment_service.py` (`_sanitize_csv_cell`), `services/analytics_service.py` (`_sanitize_csv_cell`) | `tests/test_security.py::test_csv_injection_neutralization` | **PASS** |
 | **Login Throttling** | `services/auth_service.py` (`_is_rate_limited`, `_record_failed_attempt`, 5-failure 5-minute lockout) | `tests/test_security.py::test_login_brute_force_throttling` | **PASS** |
+| **Forum XSS Prevention** | Strict Jinja2 autoescape, CSS `white-space: pre-wrap`, zero `\|safe` filters on user text | `tests/test_forum.py::test_forum_xss_prevention` | **PASS** |
+| **Forum Anti-Spam Rate Limit** | `services/forum_service.py` (`_check_rate_limit`, `_check_duplicate_body`, hourly/10-min window) | `tests/test_forum.py::test_forum_rate_limiting` | **PASS** |
+| **Forum Report & Abuse Control** | `models/forum.py` (Unique `reporter_id, target_type, target_id`), admin moderation queue | `tests/test_forum.py::test_forum_reporting_and_moderation` | **PASS** |
+| **Forum PII Privacy Guard** | `services/forum_service.py` (`get_author_info`: no roll numbers or emails leaked) | `tests/test_forum.py::test_forum_pii_protection` | **PASS** |
 
 ---
 
@@ -30,7 +34,9 @@
 
 ## 3. Known Limitations (Honest Assessment)
 1. **Local Demo HTTPS**: In local development (`FLASK_ENV=development`), HTTP is used (`http://127.0.0.1:5000`). `SESSION_COOKIE_SECURE` is enforced only when running under `ProductionConfig`.
-2. **In-Memory Login Throttling (Multi-Worker Note)**: The failed login tracking (`_FAILED_LOGINS` in `auth_service.py`) is held in-process memory. Under multi-worker WSGI servers (such as Gunicorn with 2+ workers) or distributed cloud containers, each process maintains its own independent failure counters. For large-scale production deployments with high traffic, a shared Redis instance or Flask-Limiter with Redis backend is recommended.
+2. **In-Memory Login & Forum Throttling (Multi-Worker Note)**: The failed login tracking (`_FAILED_LOGINS` in `auth_service.py`) and forum rate limiting (`_USER_THREAD_TIMESTAMPS`, `_USER_POST_TIMESTAMPS`, `_USER_RECENT_BODIES` in `forum_service.py`) are held in process memory. Under multi-worker WSGI servers (such as Gunicorn with 2+ workers) or distributed cloud containers, each process maintains its own independent failure counters. For large-scale production deployments with high traffic, a shared Redis instance or Flask-Limiter with Redis backend is recommended.
 3. **Email Verification**: User registration does not require clicking an email verification link before login.
 4. **Password Reset Flow**: There is no self-service "Forgot Password" or tokenized email reset mechanism.
 5. **Malware Scanning**: File uploads are verified for extension, size, and document magic bytes (PDF/DOCX structure), but binary contents are not scanned with an anti-virus or sandboxing engine (e.g., ClamAV).
+6. **Forum Content Moderation**: The forum relies on peer reports and manual admin review via `/admin/forum/reports`. There is no automated profanity filter or AI toxicity classifier.
+7. **No Rich Media or Markdown**: Forum content is strictly plain text with CSS pre-wrap. File/image uploads and markdown parsing are intentionally disabled to eliminate remote code execution and SVG/DOM XSS vectors.

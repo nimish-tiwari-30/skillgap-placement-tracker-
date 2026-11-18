@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Forum Moderation Reports{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">
+                <i class="bi bi-shield-check text-primary me-2"></i>Forum Moderation Reports
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Review flagged discussions and replies submitted by community members.
+            </p>
+        </div>
+        <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary btn-sm" target="_blank">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Open Forum
+        </a>
+    </div>
+
+    <!-- Status Tabs -->
+    <div class="card mb-4" style="border:1px solid var(--border-color); border-radius:12px; background:var(--card-bg);">
+        <div class="card-body p-2 d-flex gap-2">
+            <a href="{{ url_for('admin.forum_reports', status='open') }}"
+               class="btn btn-sm {% if current_status == 'open' %}btn-primary{% else %}btn-outline-secondary{% endif %} px-3">
+                <i class="bi bi-exclamation-circle me-1"></i>Open Reports
+            </a>
+            <a href="{{ url_for('admin.forum_reports', status='resolved') }}"
+               class="btn btn-sm {% if current_status == 'resolved' %}btn-primary{% else %}btn-outline-secondary{% endif %} px-3">
+                <i class="bi bi-check2-circle me-1"></i>Resolved
+            </a>
+            <a href="{{ url_for('admin.forum_reports', status='dismissed') }}"
+               class="btn btn-sm {% if current_status == 'dismissed' %}btn-primary{% else %}btn-outline-secondary{% endif %} px-3">
+                <i class="bi bi-x-circle me-1"></i>Dismissed
+            </a>
+        </div>
+    </div>
+
+    <!-- Reports Table Card -->
+    <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; overflow:hidden;">
+        {% if reports %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                    <tr>
+                        <th style="font-size:12px; padding:12px 16px; font-weight:600; width:130px;">Date &amp; Reporter</th>
+                        <th style="font-size:12px; padding:12px 16px; font-weight:600; width:100px;">Target</th>
+                        <th style="font-size:12px; padding:12px 16px; font-weight:600;">Reported Content &amp; Reason</th>
+                        <th style="font-size:12px; padding:12px 16px; font-weight:600; width:110px;">Status</th>
+                        <th style="font-size:12px; padding:12px 16px; font-weight:600; text-align:right; width:220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reports %}
+                    <tr style="border-bottom:1px solid var(--border-color);">
+                        <!-- Reporter & Date -->
+                        <td style="padding:12px 16px;">
+                            <div class="fw-semibold text-dark" style="font-size:13px;">{{ r.reporter_info.name }}</div>
+                            <span class="badge {% if r.reporter_info.is_admin %}bg-dark text-white{% else %}bg-secondary-subtle text-secondary{% endif %}" style="font-size:10px;">
+                                {{ r.reporter_info.role }}
+                            </span>
+                            <div class="text-muted mt-1" style="font-size:11px;">
+                                {{ r.created_at.strftime('%d %b %Y, %H:%M') if r.created_at else '' }}
+                            </div>
+                        </td>
+
+                        <!-- Target Type -->
+                        <td style="padding:12px 16px;">
+                            <span class="badge {% if r.target_type == 'thread' %}bg-primary-subtle text-primary{% else %}bg-info-subtle text-info{% endif %} fw-semibold" style="font-size:11px;">
+                                {{ r.target_type|capitalize }} #{{ r.target_id }}
+                            </span>
+                            {% if r.target_deleted %}
+                            <div class="mt-1"><span class="badge bg-danger-subtle text-danger" style="font-size:10px;">Deleted</span></div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Preview & Reason -->
+                        <td style="padding:12px 16px;">
+                            <div class="mb-1">
+                                {% if r.target_preview %}
+                                <strong class="text-dark" style="font-size:13px;">{{ r.target_preview }}</strong>
+                                {% endif %}
+                                {% if r.thread_id %}
+                                <a href="{{ url_for('forum.thread_view', thread_id=r.thread_id) }}" target="_blank" class="ms-2 text-decoration-none" style="font-size:12px;">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>View Thread
+                                </a>
+                                {% endif %}
+                            </div>
+                            {% if r.target_body %}
+                            <div class="p-2 mb-2 rounded bg-light border text-muted" style="font-size:12px; white-space:pre-wrap; max-height:80px; overflow-y:auto;">{{ r.target_body }}</div>
+                            {% endif %}
+
+                            <div style="font-size:12.5px;">
+                                <strong class="text-danger"><i class="bi bi-flag-fill me-1"></i>Reason:</strong>
+                                <span class="text-dark">{{ r.reason }}</span>
+                            </div>
+
+                            {% if r.status != 'open' and r.resolver %}
+                            <div class="text-muted mt-1" style="font-size:11px;">
+                                <i class="bi bi-person-check me-1"></i>Handled by <strong>{{ r.resolver.name }}</strong>
+                                {% if r.resolved_at %}on {{ r.resolved_at.strftime('%d %b %Y, %H:%M') }}{% endif %}
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td style="padding:12px 16px;">
+                            {% if r.status == 'open' %}
+                            <span class="badge bg-warning text-dark fw-semibold" style="font-size:11px;">
+                                <i class="bi bi-hourglass-split me-1"></i>Open
+                            </span>
+                            {% elif r.status == 'resolved' %}
+                            <span class="badge bg-success-subtle text-success fw-semibold" style="font-size:11px;">
+                                <i class="bi bi-check-circle me-1"></i>Resolved
+                            </span>
+                            {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary fw-semibold" style="font-size:11px;">
+                                <i class="bi bi-x-circle me-1"></i>Dismissed
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions -->
+                        <td style="padding:12px 16px; text-align:right;">
+                            {% if r.status == 'open' %}
+                            <div class="d-flex flex-column gap-1 align-items-end">
+                                <!-- Dismiss -->
+                                <form method="POST" action="{{ url_for('admin.resolve_forum_report', report_id=r.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="dismissed">
+                                    <button type="submit" class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size:11.5px;">
+                                        <i class="bi bi-x-lg me-1"></i>Dismiss Report
+                                    </button>
+                                </form>
+
+                                <!-- Resolve Only -->
+                                <form method="POST" action="{{ url_for('admin.resolve_forum_report', report_id=r.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="resolved">
+                                    <button type="submit" class="btn btn-outline-success btn-sm py-1 px-2" style="font-size:11.5px;">
+                                        <i class="bi bi-check-lg me-1"></i>Mark Resolved
+                                    </button>
+                                </form>
+
+                                <!-- Resolve & Delete Content -->
+                                {% if not r.target_deleted %}
+                                <form method="POST" action="{{ url_for('admin.resolve_forum_report', report_id=r.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this reported content and mark the report resolved?');">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="action" value="resolved">
+                                    <input type="hidden" name="delete_content" value="1">
+                                    <input type="hidden" name="target_type" value="{{ r.target_type }}">
+                                    <input type="hidden" name="target_id" value="{{ r.target_id }}">
+                                    <button type="submit" class="btn btn-danger btn-sm py-1 px-2" style="font-size:11.5px;">
+                                        <i class="bi bi-trash me-1"></i>Delete Content
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-muted" style="font-size:12px;">No pending actions</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-transparent py-3" style="border-top:1px solid var(--border-color);">
+            <nav aria-label="Reports pagination">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.forum_reports', status=current_status, page=pagination.prev_num) }}">Previous</a>
+                    </li>
+                    {% for p in pagination.iter_pages(left_edge=2, left_current=2, right_current=2, right_edge=2) %}
+                        {% if p %}
+                            <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('admin.forum_reports', status=current_status, page=p) }}">{{ p }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">…</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('admin.forum_reports', status=current_status, page=pagination.next_num) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <div class="display-6 text-muted mb-2"><i class="bi bi-shield-check"></i></div>
+            <h5 class="fw-bold mb-1">No reports found</h5>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                {% if current_status == 'open' %}
+                The moderation queue is clear. All reported discussions and replies have been handled!
+                {% else %}
+                No {{ current_status }} reports in the record.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

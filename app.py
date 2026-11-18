@@ -79,11 +79,13 @@ def create_app(config_name: str = None) -> Flask:
     from routes.student import student_bp
     from routes.admin import admin_bp
     from routes.api import api_bp
+    from routes.forum import forum_bp
 
     app.register_blueprint(auth_bp)                       # /login, /register, /logout
     app.register_blueprint(student_bp, url_prefix='/student')  # /student/dashboard, etc.
     app.register_blueprint(admin_bp,   url_prefix='/admin')    # /admin/dashboard, etc.
     app.register_blueprint(api_bp,     url_prefix='/api')      # /api/...
+    app.register_blueprint(forum_bp,   url_prefix='/forum')    # /forum/...
 
     # ── Download Project ZIP Route ───────────────────────────────
     from flask import send_file
@@ -105,6 +107,7 @@ def create_app(config_name: str = None) -> Flask:
         return {
             'current_year': datetime.utcnow().year,
             'app_name': 'Skill Gap System',
+            'forum_enabled': app.config.get('FORUM_ENABLED', True),
         }
 
     # ── Security Headers ─────────────────────────────────────────

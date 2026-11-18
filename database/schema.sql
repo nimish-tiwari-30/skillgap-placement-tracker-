@@ -494,3 +494,138 @@ CREATE TABLE IF NOT EXISTS employment_outcome_skills (
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+
+-- ────────────────────────────────────────────────
+-- TABLE 22: forum_categories
+-- Discussion categories for open student & admin forum
+-- ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forum_categories (
+    id                  INT             NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(100)    NOT NULL,
+    slug                VARCHAR(100)    NOT NULL,
+    description         VARCHAR(255)    DEFAULT NULL,
+    sort_order          INT             NOT NULL DEFAULT 0,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_forum_categories_name (name),
+    UNIQUE KEY uq_forum_categories_slug (slug),
+    INDEX idx_forum_categories_sort_order (sort_order)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ────────────────────────────────────────────────
+-- TABLE 23: forum_threads
+-- Discussion threads created by authenticated users
+-- ON DELETE category: RESTRICT (cannot delete category with active threads)
+-- ON DELETE user: CASCADE (removing user cleans up their threads)
+-- ON DELETE skill: SET NULL (deleting a skill preserves the thread)
+-- ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forum_threads (
+    id                  INT             NOT NULL AUTO_INCREMENT,
+    category_id         INT             NOT NULL,
+    user_id             INT             NOT NULL,
+    title               VARCHAR(150)    NOT NULL,
+    body                TEXT            NOT NULL,
+    skill_id            INT             DEFAULT NULL,
+    is_pinned           TINYINT(1)      NOT NULL DEFAULT 0,
+    is_locked           TINYINT(1)      NOT NULL DEFAULT 0,
+    is_deleted          TINYINT(1)      NOT NULL DEFAULT 0,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    last_activity_at    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    INDEX idx_forum_threads_category (category_id),
+    INDEX idx_forum_threads_user (user_id),
+    INDEX idx_forum_threads_last_activity (last_activity_at),
+    INDEX idx_forum_threads_is_deleted (is_deleted),
+    INDEX idx_forum_threads_skill (skill_id),
+    CONSTRAINT fk_forum_threads_category
+        FOREIGN KEY (category_id) REFERENCES forum_categories(id)
+        ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT fk_forum_threads_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_forum_threads_skill
+        FOREIGN KEY (skill_id) REFERENCES skills(id)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ────────────────────────────────────────────────
+-- TABLE 24: forum_posts
+-- Flat discussion replies to a thread
+-- ON DELETE thread: CASCADE (deleting thread removes replies)
+-- ON DELETE user: CASCADE (removing user removes replies)
+-- ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forum_posts (
+    id                  INT             NOT NULL AUTO_INCREMENT,
+    thread_id           INT             NOT NULL,
+    user_id             INT             NOT NULL,
+    body                TEXT            NOT NULL,
+    is_deleted          TINYINT(1)      NOT NULL DEFAULT 0,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    edited_at           DATETIME        DEFAULT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_forum_posts_thread (thread_id),
+    INDEX idx_forum_posts_user (user_id),
+    INDEX idx_forum_posts_created (created_at),
+    CONSTRAINT fk_forum_posts_thread
+        FOREIGN KEY (thread_id) REFERENCES forum_threads(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_forum_posts_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ────────────────────────────────────────────────
+-- TABLE 25: forum_post_likes
+-- Helpful / Upvote marks on threads and posts
+-- Target type: 'thread' or 'post'
+-- Unique constraint enforces one vote per user per target
+-- ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forum_post_likes (
+    id                  INT             NOT NULL AUTO_INCREMENT,
+    user_id             INT             NOT NULL,
+    target_type         ENUM('thread','post') NOT NULL,
+    target_id           INT             NOT NULL,
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_forum_likes_user_target (user_id, target_type, target_id),
+    INDEX idx_forum_likes_target (target_type, target_id),
+    INDEX idx_forum_likes_user (user_id),
+    CONSTRAINT fk_forum_likes_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- ────────────────────────────────────────────────
+-- TABLE 26: forum_reports
+-- User reports for inappropriate / abusive discussion content
+-- Target type: 'thread' or 'post'
+-- Unique constraint prevents reporting the same item multiple times
+-- ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS forum_reports (
+    id                  INT             NOT NULL AUTO_INCREMENT,
+    reporter_id         INT             NOT NULL,
+    target_type         ENUM('thread','post') NOT NULL,
+    target_id           INT             NOT NULL,
+    reason              VARCHAR(300)    NOT NULL,
+    status              ENUM('open','resolved','dismissed') NOT NULL DEFAULT 'open',
+    created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    resolved_by         INT             DEFAULT NULL,
+    resolved_at         DATETIME        DEFAULT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_forum_reports_user_target (reporter_id, target_type, target_id),
+    INDEX idx_forum_reports_status (status),
+    INDEX idx_forum_reports_target (target_type, target_id),
+    INDEX idx_forum_reports_reporter (reporter_id),
+    CONSTRAINT fk_forum_reports_reporter
+        FOREIGN KEY (reporter_id) REFERENCES users(id)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT fk_forum_reports_resolver
+        FOREIGN KEY (resolved_by) REFERENCES users(id)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+

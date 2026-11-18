@@ -5,6 +5,7 @@ Admin Blueprint — Phase 5: Skills management + Student list.
 """
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, abort
+from flask_login import current_user
 from utils.decorators import admin_required
 from services import profile_service, job_service
 from forms.job_forms import JobRoleForm, JobDescriptionForm, IMPORTANCE_CHOICES
@@ -861,5 +862,114 @@ def model_retrain():
         flash(f"Retraining failed: {exc}", 'danger')
 
     return redirect(url_for('admin.model_management'))
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+#  FORUM MODERATION & CATEGORIES
+# ════════════════════════════════════════════════════════════════════════════════
+
+@admin_bp.route('/forum/reports', methods=['GET'])
+@admin_required
+def forum_reports():
+    """Admin moderation panel: view open and resolved content reports."""
+    from services import forum_service
+    status = request.args.get('status', 'open').strip()
+    page = request.args.get('page', 1, type=int)
+
+    data = forum_service.list_reports(status=status, page=page, per_page=20)
+    return render_template(
+        'admin/forum_reports.html',
+        title="Forum Moderation Reports",
+        reports=data['reports'],
+        pagination=data['pagination'],
+        current_status=data['status']
+    )
+
+
+@admin_bp.route('/forum/reports/<int:report_id>/resolve', methods=['POST'])
+@admin_required
+def resolve_forum_report(report_id: int):
+    """Admin action: resolve or dismiss a user report, optionally deleting content."""
+    from services import forum_service
+    action = request.form.get('action', 'resolved').strip()
+    delete_content = request.form.get('delete_content') == '1'
+    target_type = request.form.get('target_type')
+    target_id_str = request.form.get('target_id')
+
+    if delete_content and target_type and target_id_str and target_id_str.isdigit():
+        t_id = int(target_id_str)
+        if target_type == 'thread':
+            forum_service.delete_own_thread(current_user, t_id)
+        elif target_type == 'post':
+            forum_service.delete_own_post(current_user, t_id)
+
+    ok, msg = forum_service.resolve_report(report_id, current_user.id, action=action)
+    flash(msg, "success" if ok else "danger")
+    return redirect(url_for('admin.forum_reports'))
+
+
+@admin_bp.route('/forum/categories', methods=['GET', 'POST'])
+@admin_required
+def forum_categories():
+    """Admin panel: view, add, and re-order forum categories."""
+    from services import forum_service
+    from forms.forum_forms import CategoryForm
+
+    form = CategoryForm()
+    if form.validate_on_submit():
+        ok, res = forum_service.create_category(
+            name=form.name.data,
+            slug=form.slug.data,
+            description=form.description.data,
+            sort_order=form.sort_order.data or 0
+        )
+        if ok:
+            flash(f"Category '{res.name}' created successfully.", "success")
+            return redirect(url_for('admin.forum_categories'))
+        else:
+            flash(res, "danger")
+
+    categories_data = forum_service.list_categories(include_counts=True)
+    return render_template(
+        'admin/forum_categories.html',
+        title="Forum Categories",
+        form=form,
+        categories_data=categories_data
+    )
+
+
+@admin_bp.route('/forum/categories/<int:category_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def edit_forum_category(category_id: int):
+    """Admin action: edit an existing forum category."""
+    from services import forum_service
+    from forms.forum_forms import CategoryForm
+
+    cat = forum_service.get_category_by_id(category_id)
+    if not cat:
+        abort(404)
+
+    form = CategoryForm(obj=cat)
+    if form.validate_on_submit():
+        ok, res = forum_service.update_category(
+            cat_id=category_id,
+            name=form.name.data,
+            slug=form.slug.data,
+            description=form.description.data,
+            sort_order=form.sort_order.data or 0
+        )
+        if ok:
+            flash(f"Category '{cat.name}' updated successfully.", "success")
+            return redirect(url_for('admin.forum_categories'))
+        else:
+            flash(res, "danger")
+
+    return render_template(
+        'admin/forum_category_edit.html',
+        title=f"Edit Category — {cat.name}",
+        form=form,
+        category=cat
+    )
+
 
 

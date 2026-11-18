@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}Forum Categories{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-1" style="font-size:22px;">
+                <i class="bi bi-folder2-open text-primary me-2"></i>Forum Categories
+            </h2>
+            <p class="text-muted mb-0" style="font-size:13px;">
+                Manage discussion categories, slugs, descriptions, and sort order.
+            </p>
+        </div>
+        <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary btn-sm" target="_blank">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Open Forum
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Add Category Form Column -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-header bg-transparent py-3" style="border-bottom:1px solid var(--border-color);">
+                    <h5 class="fw-bold mb-0" style="font-size:15px;">
+                        <i class="bi bi-plus-circle me-1 text-primary"></i>Add Category
+                    </h5>
+                </div>
+                <div class="card-body p-3">
+                    <form method="POST" action="{{ url_for('admin.forum_categories') }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- Name -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold" style="font-size:13px;">
+                                Name <span class="text-danger">*</span>
+                            </label>
+                            {{ form.name(class="form-control form-control-sm " ~ ("is-invalid" if form.name.errors else ""), id="name", placeholder="e.g. Interview Experience", maxlength="100") }}
+                            {% for error in form.name.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="mb-3">
+                            <label for="slug" class="form-label fw-semibold" style="font-size:13px;">
+                                Slug <span class="text-danger">*</span>
+                            </label>
+                            {{ form.slug(class="form-control form-control-sm " ~ ("is-invalid" if form.slug.errors else ""), id="slug", placeholder="e.g. interview-experience", maxlength="100") }}
+                            <div class="form-text" style="font-size:11px;">Lowercase letters, numbers and hyphens only.</div>
+                            {% for error in form.slug.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label fw-semibold" style="font-size:13px;">
+                                Description
+                            </label>
+                            {{ form.description(class="form-control form-control-sm " ~ ("is-invalid" if form.description.errors else ""), id="description", rows="3", placeholder="Brief description of discussions here...", maxlength="255") }}
+                            {% for error in form.description.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Sort Order -->
+                        <div class="mb-3">
+                            <label for="sort_order" class="form-label fw-semibold" style="font-size:13px;">
+                                Sort Order
+                            </label>
+                            {{ form.sort_order(class="form-control form-control-sm " ~ ("is-invalid" if form.sort_order.errors else ""), id="sort_order", placeholder="0") }}
+                            <div class="form-text" style="font-size:11px;">Lower numbers appear first. Default is 0.</div>
+                            {% for error in form.sort_order.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-sm w-100 fw-semibold py-2">
+                            <i class="bi bi-plus-lg me-1"></i>Create Category
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Categories Table Column -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm" style="border:1px solid var(--border-color); border-radius:14px; overflow:hidden;">
+                <div class="card-header bg-transparent py-3" style="border-bottom:1px solid var(--border-color);">
+                    <h5 class="fw-bold mb-0" style="font-size:15px;">
+                        <i class="bi bi-list-ul me-1 text-primary"></i>Active Categories ({{ categories_data|length }})
+                    </h5>
+                </div>
+                {% if categories_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead style="background:var(--main-bg); border-bottom:1px solid var(--border-color);">
+                            <tr>
+                                <th style="font-size:12px; padding:12px 16px; font-weight:600; width:50px;">Order</th>
+                                <th style="font-size:12px; padding:12px 16px; font-weight:600;">Category Name &amp; Slug</th>
+                                <th style="font-size:12px; padding:12px 16px; font-weight:600;">Description</th>
+                                <th style="font-size:12px; padding:12px 16px; font-weight:600; text-align:center; width:90px;">Threads</th>
+                                <th style="font-size:12px; padding:12px 16px; font-weight:600; text-align:right; width:80px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in categories_data %}
+                            {% set cat = item.category %}
+                            <tr style="border-bottom:1px solid var(--border-color);">
+                                <td style="padding:12px 16px; font-size:12.5px; font-weight:600;" class="text-muted">
+                                    {{ cat.sort_order }}
+                                </td>
+                                <td style="padding:12px 16px;">
+                                    <div class="fw-bold text-dark" style="font-size:13.5px;">{{ cat.name }}</div>
+                                    <code class="text-muted" style="font-size:11px;">/forum/c/{{ cat.slug }}</code>
+                                </td>
+                                <td style="padding:12px 16px; font-size:12.5px; color:#555;">
+                                    {{ cat.description or '—' }}
+                                </td>
+                                <td style="padding:12px 16px; text-align:center;">
+                                    <span class="badge bg-primary-subtle text-primary fw-semibold" style="font-size:11.5px;">
+                                        {{ item.thread_count }}
+                                    </span>
+                                </td>
+                                <td style="padding:12px 16px; text-align:right;">
+                                    <a href="{{ url_for('admin.edit_forum_category', category_id=cat.id) }}"
+                                       class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size:12px;">
+                                        <i class="bi bi-pencil me-1"></i>Edit
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <p class="text-muted mb-0">No categories found. Create the first one using the form.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

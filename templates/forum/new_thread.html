@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Start a Discussion{% endblock %}
+
+{% block content %}
+<div class="animate-in">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb" style="font-size:13px;">
+            <li class="breadcrumb-item"><a href="{{ url_for('forum.index') }}" class="text-decoration-none">Discussion Forum</a></li>
+            <li class="breadcrumb-item active fw-semibold" aria-current="page">Start a Discussion</li>
+        </ol>
+    </nav>
+
+    <!-- Page Title -->
+    <div class="mb-4">
+        <h2 class="fw-bold mb-1" style="font-size:24px;">
+            <i class="bi bi-pencil-square text-primary me-2"></i>Start a New Discussion
+        </h2>
+        <p class="text-muted mb-0" style="font-size:13.5px;">
+            Post your question, preparation guide, or experience to share with your peers and faculty.
+        </p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Form Column -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0" style="border-radius:14px; background:var(--card-bg);">
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('forum.new_thread') }}" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <!-- Category Selection -->
+                        <div class="mb-3">
+                            <label for="category_id" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Forum Category <span class="text-danger">*</span>
+                            </label>
+                            {{ form.category_id(class="form-select " ~ ("is-invalid" if form.category_id.errors else ""), id="category_id") }}
+                            {% for error in form.category_id.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <small class="text-muted" style="font-size:12px;">Choose the category that best matches your discussion topic.</small>
+                        </div>
+
+                        <!-- Thread Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Discussion Title <span class="text-danger">*</span>
+                            </label>
+                            {{ form.title(class="form-control " ~ ("is-invalid" if form.title.errors else ""), id="title", placeholder="e.g. How to prepare for System Design in campus placements?", maxlength="150") }}
+                            {% for error in form.title.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted" style="font-size:11.5px;">Be clear and specific (maximum 150 characters).</small>
+                                <small class="text-muted" id="titleCounter" style="font-size:11.5px;">0 / 150</small>
+                            </div>
+                        </div>
+
+                        <!-- Optional Skill Tag -->
+                        <div class="mb-3">
+                            <label for="skill_id" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Tag a Skill (Optional)
+                            </label>
+                            {{ form.skill_id(class="form-select", id="skill_id") }}
+                            <small class="text-muted" style="font-size:12px;">Tagging a technical skill helps peers filtering by that skill find your thread.</small>
+                        </div>
+
+                        <!-- Content Body -->
+                        <div class="mb-4">
+                            <label for="body" class="form-label fw-semibold" style="font-size:13.5px;">
+                                Discussion Content <span class="text-danger">*</span>
+                            </label>
+                            {{ form.body(class="form-control " ~ ("is-invalid" if form.body.errors else ""), id="body", rows="8", placeholder="Provide context, details, code snippets, or specific questions...", maxlength="5000", style="font-size:13.5px;") }}
+                            {% for error in form.body.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                            <div class="d-flex justify-content-between mt-1">
+                                <small class="text-muted" style="font-size:11.5px;">Plain text only. Line breaks will be preserved.</small>
+                                <small class="text-muted" id="bodyCounter" style="font-size:11.5px;">0 / 5000</small>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4 fw-semibold" id="submitThreadBtn">
+                                <i class="bi bi-send-fill me-1"></i>Publish Discussion
+                            </button>
+                            <a href="{{ url_for('forum.index') }}" class="btn btn-outline-secondary px-3">
+                                Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Guidelines Card -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 sticky-top" style="border-radius:14px; top: 20px;">
+                <div class="card-header bg-white border-bottom p-3">
+                    <h6 class="fw-bold mb-0 text-primary">
+                        <i class="bi bi-shield-check me-2"></i>Posting Guidelines
+                    </h6>
+                </div>
+                <div class="card-body p-3" style="font-size:13px; line-height:1.6;">
+                    <ul class="list-unstyled mb-0 d-flex flex-column gap-2 text-muted">
+                        <li>
+                            <i class="bi bi-check2-circle text-success me-1"></i>
+                            <strong>Respectful Communication:</strong> Keep discussions constructive and polite.
+                        </li>
+                        <li>
+                            <i class="bi bi-check2-circle text-success me-1"></i>
+                            <strong>Placement Focused:</strong> Topics should relate to interview rounds, DSA, resume building, or technical concepts.
+                        </li>
+                        <li>
+                            <i class="bi bi-x-circle text-danger me-1"></i>
+                            <strong>No Private Info:</strong> Never post personal email, roll numbers, phone numbers, or passwords.
+                        </li>
+                        <li>
+                            <i class="bi bi-x-circle text-danger me-1"></i>
+                            <strong>No Plagiarism / Spam:</strong> Rate limits apply (max 5 threads per hour). Repetitive spam will be removed.
+                        </li>
+                        <li>
+                            <i class="bi bi-info-circle text-primary me-1"></i>
+                            <strong>Moderation:</strong> Forum administrators can lock, pin, or soft-delete inappropriate discussions.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Character counters for title and body
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title');
+    const titleCounter = document.getElementById('titleCounter');
+    const bodyInput = document.getElementById('body');
+    const bodyCounter = document.getElementById('bodyCounter');
+
+    if (titleInput && titleCounter) {
+        titleCounter.textContent = titleInput.value.length + ' / 150';
+        titleInput.addEventListener('input', function() {
+            titleCounter.textContent = titleInput.value.length + ' / 150';
+        });
+    }
+
+    if (bodyInput && bodyCounter) {
+        bodyCounter.textContent = bodyInput.value.length + ' / 5000';
+        bodyInput.addEventListener('input', function() {
+            bodyCounter.textContent = bodyInput.value.length + ' / 5000';
+        });
+    }
+});
+</script>
+{% endblock %}
